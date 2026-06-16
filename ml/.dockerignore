@@ -1,0 +1,48 @@
+# .dockerignore — keep the build context small and the image clean.
+# Lines starting with # are comments.
+
+# --- Local dev artifacts (NOT sent to the Docker daemon) ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Secrets and local config ---
+.env
+.env.local
+.env.*.local
+
+# --- Model artifacts (regenerate via ml/training/, do not commit) ---
+models/*.onnx
+models/*.pkl
+models/*.joblib
+
+# --- Training pipeline (not needed at runtime) ---
+training/
+notebooks/
+
+# --- Tests (not needed at runtime) ---
+tests/
+
+# --- Docs (not needed at runtime) ---
+README.md
+
+# --- Git / IDE ---
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# --- NOTE: uv.lock is INTENTIONALLY kept (not ignored) ---
+# The Dockerfile does `COPY pyproject.toml uv.lock* ./` and runs
+# `uv sync --frozen`, which requires uv.lock to be present in the
+# build context. If you ignore it, the build will fail with
+# "ERROR: uv.lock not found".
