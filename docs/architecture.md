@@ -1,16 +1,16 @@
 # Architecture — Banking MVP
 
-## Quyết định: Modular Monolith + ML Service tách riêng
+## Decision: Modular Monolith + ML Service as a separate process
 
 
-> **Chọn Modular Monolith vì:** team 2 người, 2 tháng — overhead của Microservices quá lớn.
-> Modular Monolith vẫn có separation of concerns rõ ràng, dễ migrate sau này.
+> **Why Modular Monolith:** 2-person team, 2 months — the overhead of Microservices is too large.
+> A Modular Monolith still gives clear separation of concerns and is easy to migrate later.
 
-### Tại sao ML Service tách riêng?
+### Why a separate ML Service?
 
-- Scale độc lập (ML cần nhiều RAM/CPU hơn)
-- Update model không ảnh hưởng core banking
-- Thể hiện hiểu biết về microservice pattern trong CV
+- Independent scaling (ML needs more RAM/CPU)
+- Updating the model does not affect the core banking modules
+- Demonstrates understanding of the microservice pattern (good CV story)
 
 ## System Overview
 
@@ -44,56 +44,56 @@
 ## Fraud Detection Flow (Real-time)
 
 ```
-Customer request chuyển tiền
+Customer sends a transfer request
          |
          v
-Transaction Module nhận request
+Transaction Module receives the request
          |
          v
-Gọi ML Service (HTTP/gRPC sync)
+Call ML Service (HTTP/gRPC sync)
          |
     _____|_____
     |         |
     v         v
-Score thấp  Score cao
+Score low   Score high
 (<0.5)      (>0.8)
     |         |
     v         v
-Cho qua    BLOCK
+Allow      BLOCK
              |
              v
         Notify Auditor
-        (qua Kafka)
+        (via Kafka)
 ```
 
 ## Kafka Topics
 
-| Topic | Producer | Consumer | Mục đích |
+| Topic | Producer | Consumer | Purpose |
 |---|---|---|---|
-| `transaction.completed` | Transaction Module | Audit Consumer, Notification Consumer | Giao dịch hoàn thành |
-| `transaction.fraud` | Transaction Module | Audit Consumer | Fraud bị phát hiện |
-| `auth.failed` | Auth Module | Audit Consumer | Đăng nhập thất bại |
-| `ml.retrain` | Audit Consumer | ML Retraining Consumer | Trigger retrain model |
+| `transaction.completed` | Transaction Module | Audit Consumer, Notification Consumer | Transaction completed |
+| `transaction.fraud` | Transaction Module | Audit Consumer | Fraud detected |
+| `auth.failed` | Auth Module | Audit Consumer | Login failed |
+| `ml.retrain` | Audit Consumer | ML Retraining Consumer | Trigger model retrain |
 
-## Modules trong Monolith
+## Modules in the Monolith
 
 ### Auth Module
-- Đăng ký, đăng nhập
+- Registration, login
 - JWT + Refresh Token
 - OTP (2FA)
 - Rate limiting
 
 ### Account Module
-- Tạo tài khoản, eKYC
-- Xem số dư
-- Khóa/mở khóa tài khoản, thẻ
+- Account creation, eKYC
+- View balance
+- Lock/Unlock account and card
 
 ### Transaction Module
-- Chuyển tiền nội bộ, liên ngân hàng (mock)
-- Tích hợp ML Service
-- Lịch sử giao dịch
+- Internal and interbank transfers (mock)
+- ML Service integration
+- Transaction history
 
 ### Audit Module
-- Ghi Audit Log
-- API cho Auditor xem log
-- Kafka consumer nhận events
+- Write Audit Logs
+- API for Auditor to read logs
+- Kafka consumer that receives events

@@ -136,3 +136,29 @@ http-client.private.env.json
 
 # Github Copilot persisted session migrations, see: https://github.com/microsoft/copilot-intellij-feedback/issues/712#issuecomment-3322062215
 .idea/**/copilot.data.migration.*.xml
+
+# --- Python / ML service (ml/) ---
+
+# uv-managed virtualenv
+.venv/
+venv/
+env/
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environment file with secrets (commit .env.example, not .env)
+.env
+.env.local
+.env.*.local
+
+# Trained model artifacts — regenerate via ml/training/, do not commit
+ml/models/*.onnx
+ml/models/*.pkl
+ml/models/*.joblib

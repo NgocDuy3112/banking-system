@@ -2,42 +2,42 @@
 
 ## Core Features
 
-| Feature | Mô tả |
+| Feature | Description |
 |---|---|
-| Tạo tài khoản | Customer đăng ký online, eKYC đơn giản (upload CCCD + selfie, không verify thật) |
-| Chuyển tiền nội bộ | Chuyển giữa các tài khoản trong cùng ngân hàng, đảm bảo ACID & concurrency |
-| Chuyển liên ngân hàng | Mock NAPAS 247, giả lập response từ ngân hàng ngoài |
-| Xem số dư | Customer xem số dư tài khoản real-time |
-| Lịch sử giao dịch | Xem danh sách giao dịch, filter theo thời gian, loại giao dịch |
-| Khóa/mở khóa thẻ | Customer tự khóa/mở thẻ (độc lập với tài khoản) |
-| Khóa/mở khóa tài khoản | Customer/Teller khóa/mở tài khoản (đóng băng hoàn toàn) |
-| Fraud Detection | ML real-time chặn giao dịch đáng ngờ trước khi thực hiện |
-| Audit Log | Ghi lại toàn bộ hành động trong hệ thống |
-| 2FA (OTP) | Xác thực OTP khi chuyển tiền, đăng nhập |
+| Account registration | Customer registers online, simplified eKYC (uploads CCCD + selfie, not real verification) |
+| Internal transfer | Transfer between accounts within the same bank, with ACID guarantees and concurrency control |
+| Interbank transfer | Mock NAPAS 247, simulates a response from an external bank |
+| View balance | Customer views account balance in real-time |
+| Transaction history | List of transactions, filterable by time and transaction type |
+| Lock/Unlock card | Customer self-service lock/unlock card (independent from account) |
+| Lock/Unlock account | Customer/Teller can lock/unlock account (full freeze) |
+| Fraud Detection | ML real-time blocking of suspicious transactions before they are executed |
+| Audit Log | Records every action in the system |
+| 2FA (OTP) | OTP verification for transfers and login |
 
 ## Actors
 
 ### Customer
-- Tự đăng ký tài khoản online (eKYC)
-- Thực hiện giao dịch: chuyển tiền, xem số dư, lịch sử
-- Tự khóa/mở khóa thẻ và tài khoản
-- Nhận thông báo khi có giao dịch
+- Self-register an account online (eKYC)
+- Perform transactions: transfer, view balance, view history
+- Self-service lock/unlock of cards and accounts
+- Receive notifications on transactions
 
 ### Teller
-- Hỗ trợ Customer tạo tài khoản tại quầy
-- Approve/Reject KYC thủ công
-- Nạp/rút tiền mặt tại quầy
-- Khóa/mở khóa tài khoản theo yêu cầu Customer
-- Tra cứu thông tin tài khoản Customer
+- Assist Customer in opening accounts at the branch
+- Manually Approve/Reject KYC
+- Cash deposit/withdrawal at the branch
+- Lock/unlock accounts at Customer's request
+- Look up Customer account information
 
 ### Auditor
-- Xem toàn bộ Audit Log
-- Xem lịch sử giao dịch của bất kỳ tài khoản nào
-- Review các giao dịch bị flag fraud
-- **Chỉ có quyền đọc — không thực hiện bất kỳ thao tác ghi nào**
+- View the full Audit Log
+- View transaction history of any account
+- Review transactions flagged as fraud
+- **Read-only — cannot perform any write operation**
 
 ### Admin
-- Tạo/quản lý tài khoản Staff (Teller, Auditor)
-- Cấu hình hạn mức chuyển tiền, phí giao dịch
-- Xem dashboard tổng quan hệ thống
-- Kích hoạt/vô hiệu hoá tài khoản Staff
+- Create/manage Staff accounts (Teller, Auditor)
+- Configure transfer limits and transaction fees
+- View system-wide dashboard
+- Activate/Deactivate Staff accounts

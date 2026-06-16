@@ -15,29 +15,29 @@ User ──── AuditLog
 ## Entities
 
 ### 1. User
-Chứa thông tin authentication. Tất cả roles đều có.
+Holds authentication information. Shared by all roles.
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
-| email | VARCHAR | Unique — **dùng làm login identifier** |
-| phone_number | VARCHAR | Unique, optional — kênh liên lạc / nhận OTP |
+| email | VARCHAR | Unique — **used as the login identifier** |
+| phone_number | VARCHAR | Unique, optional — contact channel / receives OTP |
 | password_hash | VARCHAR | Bcrypt |
 | role | ENUM | CUSTOMER, TELLER, AUDITOR, ADMIN |
 | status | ENUM | ACTIVE, LOCKED |
 | created_at | TIMESTAMP | |
 | updated_at | TIMESTAMP | |
 
-> **1 User — 1 Role duy nhất.** Nếu nhân viên muốn dùng app banking → tạo tài khoản Customer riêng biệt.
+> **1 User — exactly 1 Role.** If a staff member also wants to use the banking app, they must create a separate Customer account.
 >
-> **Login identifier = email.** Không có `username` riêng; user đăng nhập bằng email đã đăng ký. Quyết định: giảm friction đăng ký, OTP / forgot-password dùng cùng một kênh email.
+> **Login identifier = email.** There is no separate `username`; users log in with the email they registered with. Decision: reduces registration friction — OTP and forgot-password use the same email channel.
 
 ---
 
 ### 2. CustomerProfile
-Chứa thông tin KYC. **Chỉ Customer mới có.**
+Holds KYC information. **Only Customers have one.**
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
 | user_id | UUID | FK → User |
@@ -53,39 +53,39 @@ Chứa thông tin KYC. **Chỉ Customer mới có.**
 ---
 
 ### 3. StaffProfile
-Thông tin nhân viên. Dùng chung cho Teller, Auditor, Admin.
+Staff information. Shared by Teller, Auditor, Admin.
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
 | user_id | UUID | FK → User |
 | full_name | VARCHAR | |
-| employee_id | VARCHAR | Unique, mã nhân viên |
+| employee_id | VARCHAR | Unique, staff ID |
 
-> **Không có branch** trong MVP. Có thể thêm sau.
+> **No branch** in the MVP. May be added later.
 
 ---
 
 ### 4. Account
-Tài khoản ngân hàng của Customer.
+Customer's bank account.
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
-| account_number | VARCHAR | Unique, format: 9-14 số |
+| account_number | VARCHAR | Unique, format: 9-14 digits |
 | customer_profile_id | UUID | FK → CustomerProfile |
 | account_type | ENUM | CHECKING, SAVINGS |
-| balance | DECIMAL(19,4) | **Không dùng FLOAT** |
-| currency | VARCHAR | Mặc định: VND |
+| balance | DECIMAL(19,4) | **Do not use FLOAT** |
+| currency | VARCHAR | Default: VND |
 | status | ENUM | ACTIVE, LOCKED, CLOSED |
 | created_at | TIMESTAMP | |
 
 ---
 
 ### 5. Card
-Thẻ DEBIT liên kết với Account.
+DEBIT card linked to an Account.
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
 | account_id | UUID | FK → Account |
@@ -95,40 +95,40 @@ Thẻ DEBIT liên kết với Account.
 | expired_at | TIMESTAMP | |
 | created_at | TIMESTAMP | |
 
-> **Khóa thẻ ≠ Khóa tài khoản:**
-> - Khóa thẻ: không dùng thẻ vật lý/online được, vẫn chuyển khoản app được
-> - Khóa tài khoản: đóng băng hoàn toàn
+> **Locking a card is not the same as locking an account:**
+> - Card lock: the physical/online card cannot be used, but the customer can still transfer via the app.
+> - Account lock: the account is fully frozen.
 
 ---
 
 ### 6. Transaction
-Ghi lại toàn bộ giao dịch, bao gồm snapshot số dư và fraud score.
+Records every transaction, including balance snapshots and the fraud score.
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
-| reference_number | VARCHAR | Unique, dùng để trace |
+| reference_number | VARCHAR | Unique, used for tracing |
 | from_account_id | UUID | FK → Account |
 | to_account_id | UUID | FK → Account |
 | amount | DECIMAL(19,4) | |
 | fee | DECIMAL(19,4) | |
 | transaction_type | ENUM | INTERNAL, INTERBANK |
 | status | ENUM | PENDING, SUCCESS, FAILED, BLOCKED |
-| fraud_score | FLOAT | Output của ML (0.0 - 1.0) |
+| fraud_score | FLOAT | ML output (0.0 – 1.0) |
 | fraud_status | ENUM | CLEAR, SUSPICIOUS, BLOCKED |
-| from_balance_before | DECIMAL(19,4) | Snapshot số dư trước giao dịch |
-| from_balance_after | DECIMAL(19,4) | Snapshot số dư sau giao dịch |
-| to_balance_before | DECIMAL(19,4) | Snapshot số dư trước giao dịch |
-| to_balance_after | DECIMAL(19,4) | Snapshot số dư sau giao dịch |
+| from_balance_before | DECIMAL(19,4) | Balance snapshot before the transaction |
+| from_balance_after | DECIMAL(19,4) | Balance snapshot after the transaction |
+| to_balance_before | DECIMAL(19,4) | Balance snapshot before the transaction |
+| to_balance_after | DECIMAL(19,4) | Balance snapshot after the transaction |
 | description | TEXT | |
 | created_at | TIMESTAMP | |
 
-> **Tại sao cần balance snapshot?**
-> - Auditor verify: `from_balance_before - amount - fee = from_balance_after`
-> - Dispute resolution: proof tức thì khi khách hàng khiếu nại
-> - Forensics: trace lại số dư khi điều tra fraud
+> **Why are balance snapshots needed?**
+> - Auditor verification: `from_balance_before - amount - fee = from_balance_after`
+> - Dispute resolution: instant proof when a customer raises a complaint.
+> - Forensics: trace balances back when investigating fraud.
 
-**Lưu ý kỹ thuật:** balance snapshot phải được ghi trong cùng 1 database transaction với việc update balance:
+**Technical note:** the balance snapshot must be written in the same database transaction as the balance update:
 ```java
 @Transactional
 public void transfer(...) {
@@ -155,38 +155,38 @@ public void transfer(...) {
 ---
 
 ### 7. AuditLog
-Ghi lại toàn bộ hành động trong hệ thống. **Immutable — không ai được sửa/xóa.**
+Records every action in the system. **Immutable — no one can edit or delete it.**
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | id | UUID | Primary key |
 | actor_id | UUID | FK → User |
-| actor_role | VARCHAR | Snapshot role tại thời điểm hành động |
-| action | VARCHAR | TRANSFER, LOGIN, LOCK_ACCOUNT, APPROVE_KYC,... |
-| target_type | VARCHAR | ACCOUNT, CARD, USER, TRANSACTION,... |
-| target_id | UUID | ID của object bị tác động |
+| actor_role | VARCHAR | Snapshot of the role at the time of the action |
+| action | VARCHAR | TRANSFER, LOGIN, LOCK_ACCOUNT, APPROVE_KYC, ... |
+| target_type | VARCHAR | ACCOUNT, CARD, USER, TRANSACTION, ... |
+| target_id | UUID | ID of the affected object |
 | ip_address | VARCHAR | |
 | result | ENUM | SUCCESS, FAILED |
-| metadata | JSONB | Chi tiết thêm tuỳ action |
+| metadata | JSONB | Extra details depending on the action |
 | created_at | TIMESTAMP | |
 
 ---
 
 ### 8. OTP
-Lưu trên **Redis** (không phải PostgreSQL) để tận dụng TTL tự nhiên.
+Stored in **Redis** (not PostgreSQL) to take advantage of native TTL.
 
-| Field | Type | Ghi chú |
+| Field | Type | Notes |
 |---|---|---|
 | user_id | String | |
 | code | String | Hashed (bcrypt) |
 | type | String | LOGIN, TRANSFER, UNLOCK |
-| expired_at | TTL | Redis tự xóa sau khi hết hạn |
+| expired_at | TTL | Redis auto-deletes when expired |
 
 **Redis key pattern:** `otp:{user_id}:{type}`
 
 ---
 
-## Indexes quan trọng
+## Important Indexes
 
 ```sql
 -- Account lookup
