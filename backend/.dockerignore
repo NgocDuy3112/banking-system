@@ -1,0 +1,32 @@
+# =============================================================================
+# Files to exclude from the `podman build` / `docker build` context
+# (anything that doesn't affect compilation). Keeping the context small
+# speeds up the build and avoids sending secrets/build artifacts to the daemon.
+# =============================================================================
+
+# Build output
+build/
+.gradle/
+out/
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VCS
+.git/
+.gitignore
+
+# Logs / temp
+*.log
+*.tmp
+*.swp

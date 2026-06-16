@@ -1,0 +1,47 @@
+# podman-compose.yml
+# Pin the project name so auto-generated resources (network, default
+# container-name prefix, etc.) use a stable, short prefix instead of
+# inheriting "smartbanking-system" from the parent directory.
+name: smartbanking-dev
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: smartbanking-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smartbanking"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    # Pin the image tag so the built artifact has a stable name we can
+    # reference (podman run smartbanking-backend:dev, push, etc.) instead
+    # of the auto-generated localhost/smartbanking-system-backend:latest.
+    image: smartbanking-backend:dev
+    container_name: smartbanking-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+
+# Pin the default network name so other tools (e.g. a Postgres client
+# container) can attach to it by a stable name. Carries the -dev suffix
+# to match the project name.
+networks:
+  default:
+    name: smartbanking-dev-net
