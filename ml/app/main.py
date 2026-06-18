@@ -18,8 +18,6 @@ def health() -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    # Local development entry point. In production, the Dockerfile uses
-    # `uvicorn app.main:app --host 0.0.0.0 --port 8000` directly.
     import uvicorn
 
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

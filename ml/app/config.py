@@ -19,7 +19,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Service configuration. All env vars are prefixed with `ML_`."""
 
-    # --- Database (read by core/repository.py in a later step) ---
     db_url: str = Field(
         ...,
         description="asyncpg connection string, e.g. postgresql://user:pass@host:5432/db",
