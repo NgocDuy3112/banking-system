@@ -41,7 +41,6 @@ This document catalogs the datasets evaluated for training the Smart Banking fra
 - Large community (358+ notebooks, years of discussion)
 
 **Weaknesses:**
-- No `description` field (no NLP features)
 - No device/IP metadata
 - Binary fraud label only (no fraud type classification)
 - Synthetic — may not capture all real-world edge cases
@@ -90,7 +89,6 @@ This document catalogs the datasets evaluated for training the Smart Banking fra
 - CC0 license — no attribution required
 
 **Weaknesses:**
-- No `description` field
 - No balance columns
 - Smaller community (12 notebooks)
 - Synthetic — same caveats as PaySim
@@ -117,12 +115,6 @@ This document catalogs the datasets evaluated for training the Smart Banking fra
 │  │   spending_deviation_score in core/features.py         │
 │  └─ Used for: feature design inspiration                 │
 │                                                          │
-│  Synthesized Vietnamese Descriptions                     │
-│  ├─ Generated via Faker / LLM                            │
-│  ├─ Legitimate: "Tiền thuê nhà tháng 6", "Chuyển khoản" │
-│  ├─ Fraud: "Nộp thuế gấp", "Trúng thưởng đóng phí"      │
-│  └─ Used for: keepitreal/vietnamese-sbert embeddings     │
-│                                                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -137,7 +129,19 @@ This document catalogs the datasets evaluated for training the Smart Banking fra
 | `step` | `occurred_at` | Derive datetime from step number |
 | `oldbalanceOrg` | `from_balance_before` | Direct (Decimal) |
 | `isFraud` | Target label | Direct (0/1) |
-| — | `description` | **Synthesized separately** |
+
+### Feature Engineering (from Aryan208 blueprint)
+
+The following behavioral features are computed in `core/features.py` using PostgreSQL queries on the sender's transaction history:
+
+| Feature | Description | Inspired by |
+|---|---|---|
+| `velocity_score` | Transaction count in the last 1h / 24h | Aryan208 `velocity_score` |
+| `amount_deviation_score` | Z-score of current amount vs. user's 30-day average | Aryan208 `spending_deviation_score` |
+| `balance_emptying_ratio` | `amount / from_balance_before` — detects "drain the account" | PaySim balance columns |
+| `new_recipient_flag` | `to_account` never seen in sender's history | Derived |
+| `hour_of_day` | Cyclical encoding of `occurred_at` (sin/cos) | Common practice |
+| `day_of_week` | Cyclical encoding | Common practice |
 
 ---
 
@@ -145,13 +149,22 @@ This document catalogs the datasets evaluated for training the Smart Banking fra
 
 | Gap | Solution |
 |---|---|
-| **Vietnamese descriptions** | Synthesize with `Faker` + curated fraud keyword templates |
 | **Real-world validation** | Use your own system's data once the backend is live (Phase 2) |
-| **Description embeddings** | `keepitreal/vietnamese-sbert` → PCA(50) at inference time |
+| **Multi-class fraud labels** | PaySim is binary only; Aryan208 has `fraud_type` but no balance columns — use PaySim for now |
 
 ---
 
-## 4. References
+## 4. Design Decision: No NLP Features in v1
+
+The `description` field (transaction memo) was intentionally **excluded** from the v1 model for the following reasons:
+
+1. **No real Vietnamese banking text exists publicly.** Both PaySim and Aryan208 lack a `description` column. Synthesizing realistic Vietnamese memos at scale would require significant effort with uncertain payoff — synthetic text patterns may not reflect real fraud behavior.
+
+2. **Structured features catch the majority of fraud.** Amount anomalies, velocity spikes, balance emptying, off-hours patterns, and new-recipient detection cover 80%+ of fraud cases without needing NLP.
+
+3. **NLP can be added later with real data.** Once the banking backend is live and accumulating real Vietnamese transaction memos, the `description` field can be reintroduced into `ScoreRequest` and embedded via `keepitreal/vietnamese-sbert` for retraining in Phase 2.
+
+The `description` column **remains in the backend's `transactions` table** (`docs/data-modeling.md`) — it's a standard banking field for customer memos. It is simply not consumed by the ML service in v1.
 
 - [PaySim Paper](http://urn.kb.se/resolve?urn=urn:nbn:se:bth-12932) — E. A. Lopez-Rojas et al., EMSS 2016
 - [Machine Learning for Fraud Detection Handbook](https://fraud-detection-handbook.github.io/fraud-detection-handbook/)

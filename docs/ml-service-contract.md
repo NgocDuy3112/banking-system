@@ -6,7 +6,9 @@
 
 ## 1. What this service does
 
-Accepts a transaction description, returns a fraud score (`0.0`–`1.0`) and a status band (`CLEAR` / `SUSPICIOUS` / `BLOCKED`). The backend should call this **synchronously** during transaction processing and use the result to decide whether to allow, gate-with-OTP, or block the transfer.
+Accepts transaction details (account numbers, amount, balances, type, timestamp), returns a fraud score (`0.0`–`1.0`) and a status band (`CLEAR` / `SUSPICIOUS` / `BLOCKED`). The backend should call this **synchronously** during transaction processing and use the result to decide whether to allow, gate-with-OTP, or block the transfer.
+
+The v1 model uses **structured features only** (amount, balances, behavioral scores, time patterns). NLP on the transaction `description` field is deferred to Phase 2 when real Vietnamese banking data is available (see `docs/dataset-documents.md` § 4).
 
 The service is **best-effort**: if it's down, slow, or returns a 5xx, **the backend MUST fall back to its own rules-based check** and log the failure. This is by design (see `docs/nonfunctional-requirements.md` § Reliability).
 
@@ -19,9 +21,10 @@ The service is **best-effort**: if it's down, slow, or returns a 5xx, **the back
 ```json
 {
   "transaction_id": "11111111-1111-1111-1111-111111111111",
-  "from_account_id": "22222222-2222-2222-2222-222222222222",
-  "to_account_id":   "33333333-3333-3333-3333-333333333333",
+  "from_account_number": "1234567890",
+  "to_account_number":   "0987654321",
   "amount": "5000000.0000",
+  "from_balance_before": "15000000.0000",
   "transaction_type": "INTERNAL",
   "occurred_at": "2026-06-16T10:00:00Z"
 }
@@ -30,9 +33,10 @@ The service is **best-effort**: if it's down, slow, or returns a 5xx, **the back
 | Field | Type | Notes |
 |---|---|---|
 | `transaction_id` | UUID | The transaction's primary key in your DB. We echo this back so you can correlate. |
-| `from_account_id` | UUID | Account initiating the transfer. |
-| `to_account_id` | UUID | Destination account. |
+| `from_account_number` | string (9–15 chars) | Account number initiating the transfer. |
+| `to_account_number` | string (9–15 chars) | Destination account number. |
 | `amount` | **string** | ⚠️ **JSON string, not number.** Format: `^\d{0,15}\.\d{0,4}$` (e.g. `"5000000.0000"`). Matches your `DECIMAL(19,4)` column. |
+| `from_balance_before` | **string** | Sender's balance before the transaction. Used for balance-emptying detection. |
 | `transaction_type` | enum | `"INTERNAL"` or `"INTERBANK"`. Other values → 422. |
 | `occurred_at` | ISO-8601 UTC | When the transfer happened. We use this to compute time-of-day features. |
 
@@ -43,6 +47,7 @@ The service is **best-effort**: if it's down, slow, or returns a 5xx, **the back
   "transaction_id": "11111111-1111-1111-1111-111111111111",
   "fraud_score": 0.12,
   "fraud_status": "CLEAR",
+  "risk_level": "LOW",
   "reason_codes": [],
   "model_version": "stub-v0",
   "inference_ms": 4
@@ -53,6 +58,7 @@ The service is **best-effort**: if it's down, slow, or returns a 5xx, **the back
 |---|---|---|
 | `fraud_score` | float 0.0–1.0 | Higher = more suspicious. |
 | `fraud_status` | enum | See threshold table below. |
+| `risk_level` | enum | `LOW`, `MEDIUM`, `HIGH` — categorical risk based on thresholds. |
 | `reason_codes` | string[] | E.g. `["LARGE_AMOUNT", "NEW_RECIPIENT", "OFF_HOURS"]`. Empty in the stub. |
 | `model_version` | string | E.g. `"stub-v0"`, `"lgbm-v0.1.0"`. **Pin to this in your decision logic if you want stable behavior across retrainings.** |
 | `inference_ms` | int | Server-side inference latency. Useful for SLO dashboards. |
@@ -125,9 +131,10 @@ curl -X POST http://localhost:8000/score \
   -H 'Content-Type: application/json' \
   -d '{
     "transaction_id":"11111111-1111-1111-1111-111111111111",
-    "from_account_id":"22222222-2222-2222-2222-222222222222",
-    "to_account_id":"33333333-3333-3333-3333-333333333333",
+    "from_account_number":"1234567890",
+    "to_account_number":"0987654321",
     "amount":"5000000.0000",
+    "from_balance_before":"15000000.0000",
     "transaction_type":"INTERNAL",
     "occurred_at":"2026-06-16T10:00:00Z"
   }'
@@ -151,9 +158,10 @@ class FraudClientConfig {
 // The DTOs (use BigDecimal for amount, not double):
 public record ScoreRequest(
     UUID transactionId,
-    UUID fromAccountId,
-    UUID toAccountId,
+    String fromAccountNumber,
+    String toAccountNumber,
     BigDecimal amount,                  // @JsonSerialize with ToStringSerializer
+    BigDecimal fromBalanceBefore,       // @JsonSerialize with ToStringSerializer
     TransactionType transactionType,
     OffsetDateTime occurredAt
 ) {}
@@ -162,6 +170,7 @@ public record ScoreResponse(
     UUID transactionId,
     double fraudScore,
     FraudStatus fraudStatus,
+    RiskLevel riskLevel,
     List<String> reasonCodes,
     String modelVersion,
     int inferenceMs

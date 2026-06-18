@@ -27,11 +27,5 @@ class ScoreRequest(BaseModel):
         description="Balance of the sender account before the transaction.",
     )
     transaction_type: TransactionType
-    description: str = Field(
-        ...,
-        min_length=1,
-        max_length=255,
-        description="Transaction memo/description. Used for NLP-based fraud detection.",
-    )
     occurred_at: datetime
     model_config = ConfigDict(json_encoders={Decimal: str})
