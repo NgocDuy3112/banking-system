@@ -42,35 +42,20 @@ XGBoost has first-class SHAP support via `shap.TreeExplainer`. No model changes 
 **Target (v1):**
 ```json
 "reason_codes": [
-  {
-    "code": "BALANCE_EMPTYING",
-    "weight": 0.34,
-    "direction": "increases_risk",
-    "threshold_exceeded": true
-  },
-  {
-    "code": "NEW_RECIPIENT",
-    "weight": 0.28,
-    "direction": "increases_risk",
-    "threshold_exceeded": true
-  },
-  {
-    "code": "OFF_HOURS",
-    "weight": 0.15,
-    "direction": "increases_risk",
-    "threshold_exceeded": false
-  }
+  {"code": "BALANCE_EMPTYING", "weight": 0.34},
+  {"code": "NEW_RECIPIENT",    "weight": 0.28},
+  {"code": "OFF_HOURS",        "weight": 0.15}
 ]
 ```
 
 | Field | Type | Meaning |
 |---|---|---|
 | `code` | string | Feature code — maps to a human-readable label in the Audit UI |
-| `weight` | float | SHAP value — how much this feature pushed the score up or down |
-| `direction` | enum | `increases_risk` or `decreases_risk` |
-| `threshold_exceeded` | bool | Whether this feature crossed its alert threshold (for triage) |
+| `weight` | float | SHAP value — positive = pushes score up (risk), negative = pushes down (safe) |
 
-Only features with `|weight| > 0.05` are included in the response (noise filtering).
+The Audit UI derives direction from the sign of `weight` (`> 0` → red/increases risk, `< 0` → green/decreases risk) and compares against alert thresholds on its own. The ML service stays focused on what it actually computes: SHAP values.
+
+Only features with `|weight| > 0.05` are included in the response (noise filtering). Results are sorted by `|weight|` descending.
 
 ### 2.3 Feature Code Catalog
 

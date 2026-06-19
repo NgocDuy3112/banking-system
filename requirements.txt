@@ -1,0 +1,8 @@
+pandas
+numpy
+matplotlib
+seaborn
+python-dotenv
+kagglehub
+scikit-learn
+fastparquet

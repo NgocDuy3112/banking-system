@@ -15,4 +15,5 @@ def score(request: ScoreRequest) -> ScoreResponse:
         reason_codes=[],
         model_version="stub-v0",
         inference_ms=1,
+        risk_level="LOW",
     )

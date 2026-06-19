@@ -45,12 +45,16 @@ The service is **best-effort**: if it's down, slow, or returns a 5xx, **the back
 ```json
 {
   "transaction_id": "11111111-1111-1111-1111-111111111111",
-  "fraud_score": 0.12,
-  "fraud_status": "CLEAR",
-  "risk_level": "LOW",
-  "reason_codes": [],
-  "model_version": "stub-v0",
-  "inference_ms": 4
+  "fraud_score": 0.87,
+  "fraud_status": "BLOCKED",
+  "risk_level": "HIGH",
+  "reason_codes": [
+    {"code": "BALANCE_EMPTYING", "weight": 0.34},
+    {"code": "NEW_RECIPIENT",    "weight": 0.28},
+    {"code": "OFF_HOURS",        "weight": 0.15}
+  ],
+  "model_version": "xgboost-v1.0.0",
+  "inference_ms": 42
 }
 ```
 
@@ -59,9 +63,16 @@ The service is **best-effort**: if it's down, slow, or returns a 5xx, **the back
 | `fraud_score` | float 0.0–1.0 | Higher = more suspicious. |
 | `fraud_status` | enum | See threshold table below. |
 | `risk_level` | enum | `LOW`, `MEDIUM`, `HIGH` — categorical risk based on thresholds. |
-| `reason_codes` | string[] | E.g. `["LARGE_AMOUNT", "NEW_RECIPIENT", "OFF_HOURS"]`. Empty in the stub. |
-| `model_version` | string | E.g. `"stub-v0"`, `"lgbm-v0.1.0"`. **Pin to this in your decision logic if you want stable behavior across retrainings.** |
+| `reason_codes` | object[] | Per-feature SHAP contributions, sorted by `|weight|` descending. Empty `[]` in stub mode or when no feature crosses the `|weight| > 0.05` threshold. See breakdown below. |
+| `model_version` | string | E.g. `"stub-v0"`, `"xgboost-v1.0.0"`. **Pin to this in your decision logic if you want stable behavior across retrainings.** |
 | `inference_ms` | int | Server-side inference latency. Useful for SLO dashboards. |
+
+**`reason_codes` item breakdown:**
+
+| Field | Type | Notes |
+|---|---|---|
+| `code` | string | Feature code, e.g. `"BALANCE_EMPTYING"`, `"NEW_RECIPIENT"`. Maps to a human-readable label in the Audit UI (see `docs/mlops.md` § 2.3). |
+| `weight` | float | SHAP value — positive = pushes score up (risk), negative = pushes score down (safe). The Audit UI can derive direction from sign and compare against thresholds on its own. |
 
 ### Threshold table
 
