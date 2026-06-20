@@ -20,6 +20,7 @@ dependencies = [
     "kagglehub>=1.0.2",
     "seaborn>=0.13.2",
     "fastparquet>=2024.5.0",
+    "shap>=0.46.0",
 ]
 
 [project.optional-dependencies]
