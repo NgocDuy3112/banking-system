@@ -1,0 +1,15 @@
+feature,mean_abs_shap
+balance_emptying_ratio,1.5407121
+amount_log,0.13008885
+is_transfer,0.06388152
+sin_hour,0.054093383
+cos_hour,0.04811978
+newbalanceOrig,0.021777006
+cos_dow,0.011261436
+sin_dow,0.003050868
+velocity_1h,0.0
+velocity_24h,0.0
+velocity_3d,0.0
+amount_zscore,0.0
+new_recipient_flag,0.0
+time_since_last_txn,0.0

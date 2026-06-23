@@ -147,9 +147,28 @@ The following behavioral features are computed in `core/features.py` using Postg
 
 ## 3. What's Still Missing
 
+> **⚠️ Simulator-leak caveat (added 2026-06-22)**
+>
+> PaySim fraud labels are **mathematically derivable** from the engineered
+> balance-error features (`orig_error`, `dest_error`, `has_orig_error`,
+> `has_dest_error`). The fraud-generation rules enforce the balance
+> invariants (`oldbalanceOrg - newbalanceOrig == amount`) deterministically,
+> so any tree model that splits on these features achieves AUC ≈ 1.0 on
+> PaySim without learning anything generalizable to real fraud.
+>
+> **Treat PaySim test metrics as a regression test** (does the pipeline
+> produce consistent numbers?), **not as a quality signal.** When the
+> model is re-trained on real transaction data from the live `transactions`
+> table, expect AUC to drop to roughly 0.85–0.95 — that is the honest
+> baseline.
+>
+> v1 of this model drops the four leak features entirely. See
+> `notebooks/04-model-training.ipynb` §1 for the rationale, and the
+> `## What's Still Missing` table below for the Phase 2 retraining plan.
+
 | Gap | Solution |
 |---|---|
-| **Real-world validation** | Use your own system's data once the backend is live (Phase 2) |
+| **Real-world validation** | Use your own system's data once the backend is live (Phase 2). Until then, PaySim metrics do not predict production performance (see caveat above). |
 | **Multi-class fraud labels** | PaySim is binary only; Aryan208 has `fraud_type` but no balance columns — use PaySim for now |
 
 ---

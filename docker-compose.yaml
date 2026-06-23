@@ -4,6 +4,10 @@ services:
   postgres:
     image: docker.io/library/postgres:16-alpine
     container_name: smartbanking-postgres
+    # Load env vars from configs/.env so ${POSTGRES_*} resolves correctly.
+    # Without this the variables default to blank strings and auth fails.
+    env_file:
+      - ./configs/.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -13,54 +17,46 @@ services:
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d smartbanking"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-  backend:
-    build: ./backend
-    image: smartbanking-backend:dev
-    container_name: smartbanking-backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "8080:8080"
-
   mlflow:
-    image: docker.io/library/python:3.11-slim
+    image: ghcr.io/mlflow/mlflow:v3.14.0-full
     container_name: smartbanking-mlflow
     depends_on:
       postgres:
         condition: service_healthy
+    # Load env vars from configs/.env so ${POSTGRES_*} resolves correctly.
+    env_file:
+      - ./configs/.env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      # MLflow reuses the existing Postgres database. Its table names do not
-      # collide with the banking app's, so they can share the `public` schema.
-      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    command: >-
-      bash -c "
-      pip install --no-cache-dir 'mlflow[extras]>=2.15.0,<3' psycopg2-binary &&
-      mkdir -p /var/lib/mlflow/artifacts &&
-      mlflow server
-        --host 0.0.0.0
-        --port 5000
-        --backend-store-uri '$$MLFLOW_BACKEND_STORE_URI'
-        --default-artifact-root /var/lib/mlflow/artifacts
-      "
+      MLFLOW_BACKEND_STORE_URI: 'postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}'
+      # mlflow-artifacts:/ tells the client to proxy artifact uploads
+      # through the tracking server's HTTP API (enabled by --serve-artifacts).
+      # The server stores them at --artifacts-destination on the container fs.
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: mlflow-artifacts:/
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - '5000'
+      - --serve-artifacts
+      - --artifacts-destination
+      - /mlflow/artifacts
+      - --allowed-hosts
+      - '*'
+      - --cors-allowed-origins
+      - '*'
     volumes:
-      - ./data/mlflow/artifacts:/var/lib/mlflow/artifacts
+      - ./data/mlflow/artifacts:/mlflow/artifacts
     ports:
       - "5050:5000"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/api/2.0/mlflow/experiments/list', timeout=2)\""]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
