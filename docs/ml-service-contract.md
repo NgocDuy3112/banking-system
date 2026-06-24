@@ -125,7 +125,8 @@ The stub returns in ~1ms. The real model will do DB lookups (history features) a
 ```bash
 cd ml
 uv sync
-cp .env.example .env             # then edit ML_DB_URL
+# Env vars are in configs/.env — the service reads them automatically.
+# See ml/.env.example for documentation on what each variable does.
 uv run uvicorn app.main:app      # listens on :8000
 ```
 

@@ -8,4 +8,6 @@ scikit-learn
 fastparquet
 shap
 xgboost
+pytest
+httpx
 mlflow>=2.15.0,<3

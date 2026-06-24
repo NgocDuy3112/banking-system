@@ -1,19 +1,15 @@
-"""Application configuration loaded from environment variables.
-
-Uses pydantic-settings to read env vars (with the ML_ prefix) and a
-.env file at startup. All settings are typed and validated — if a
-required var is missing or malformed, the service fails fast at
-startup rather than at request time.
-
-The `@lru_cache` on `get_settings()` means env is read once per process,
-not once per request.
-"""
-
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve configs/.env relative to this file: ml/app/config.py → repo root
+ENV_FILE = Path(__file__).resolve().parent.parent.parent / "configs" / ".env"
+
+# If the shared env file doesn't exist (e.g. CI, tests), fall back to
+# os.environ only. Tests set vars via conftest.py.
+ENV_FILE_KWARGS = {"env_file": str(ENV_FILE), "env_file_encoding": "utf-8"} if ENV_FILE.exists() else {}
 
 
 class Settings(BaseSettings):
@@ -52,8 +48,7 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
+        **ENV_FILE_KWARGS,
         env_prefix="ML_",
         case_sensitive=False,
         extra="ignore",
