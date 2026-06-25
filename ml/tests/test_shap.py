@@ -1,14 +1,3 @@
-"""Pytest tests for SHAP explainability — reason code generation.
-
-Verifies:
-- SHAP explainer loads correctly from the saved pickle
-- SHAP values have the correct shape (1 row × N features)
-- Reason code mapping works for suspicious transactions
-- Reason code mapping works for normal transactions
-- Edge cases: all-zero input, extreme values
-- Weight threshold filtering and max reason codes limit
-"""
-
 import json
 import pickle
 from pathlib import Path
@@ -62,23 +51,10 @@ def code_map():
     """Feature name → human-readable reason code mapping.
 
     Must stay in sync with app.core.constants.SHAP_FEATURE_TO_CODE.
+    The test_code_map_matches_constants test enforces this.
     """
-    return {
-        "newbalanceOrig": "BALANCE_CHANGE",
-        "is_transfer": "INTERBANK_RISK",
-        "amount_log": "LARGE_AMOUNT",
-        "balance_emptying_ratio": "BALANCE_EMPTYING",
-        "sin_hour": "OFF_HOURS",
-        "cos_hour": "OFF_HOURS",
-        "sin_dow": "UNUSUAL_DAY",
-        "cos_dow": "UNUSUAL_DAY",
-        "velocity_1h": "VELOCITY_SPIKE",
-        "velocity_24h": "VELOCITY_SPIKE",
-        "velocity_3d": "VELOCITY_SPIKE",
-        "amount_zscore": "LARGE_AMOUNT",
-        "new_recipient_flag": "NEW_RECIPIENT",
-        "time_since_last_txn": "DORMANT_ACCOUNT",
-    }
+    from app.core.constants import SHAP_FEATURE_TO_CODE
+    return dict(SHAP_FEATURE_TO_CODE)
 
 
 @pytest.fixture(scope="module")
@@ -86,10 +62,16 @@ def suspicious_features(num_features):
     """Feature vector simulating a high-risk transaction.
 
     Scenario: 100M VND interbank transfer at 3 AM, 95% balance emptied,
-    7 transactions in the last hour, new recipient.
+    7 transactions in the last hour, new recipient, round amount.
+
+    NOTE: Sets values only for the v1 features (indices 0–13) so the test
+    stays valid against the currently-saved v1 model. When the v2 model
+    is retrained with the new round-number / amount-balance / time-bucket
+    features (see app/core/features_runtime.py), update the indices below
+    to also populate columns 14–21.
     """
     vec = np.zeros((1, num_features), dtype=np.float32)
-    vec[0, 0] = 50000.0                          # newbalanceOrig: low balance after tx
+    vec[0, 0] = 50000.0                          # amount_log*price: low balance after tx proxy
     vec[0, 1] = 1.0                              # is_transfer: interbank
     vec[0, 2] = np.log1p(100_000_000)            # amount_log: ~18.4
     vec[0, 3] = 0.95                             # balance_emptying_ratio: 95%
@@ -97,6 +79,14 @@ def suspicious_features(num_features):
     vec[0, 5] = np.cos(2 * np.pi * 3 / 24)       # cos_hour: 3 AM
     vec[0, 8] = 7.0                              # velocity_1h: 7 txns
     vec[0, 12] = 1.0                             # new_recipient_flag: new
+    # v2 features (added in v3 — indices shifted after dropping leak features):
+    vec[0, 13] = 1.0                             # is_round_amount: 100M is round
+    vec[0, 14] = np.log10(100_000_000)           # round_amount_log: ~8.0
+    vec[0, 15] = 95.0                            # amount_to_balance_pct: 95%
+    vec[0, 16] = 0.0                             # is_total_drain: 95% < 99% threshold
+    vec[0, 17] = 1.0                             # is_night: 3 AM
+    vec[0, 18] = 0.0                             # is_office_hours: 3 AM is not
+    vec[0, 19] = 0.0                             # is_weekend: weekday (assume)
     return vec
 
 
@@ -105,10 +95,10 @@ def normal_features(num_features):
     """Feature vector simulating a low-risk transaction.
 
     Scenario: 500K VND internal transfer at 2 PM, 5% balance used,
-    1 transaction in the last hour, known recipient.
+    1 transaction in the last hour, known recipient, non-round amount.
     """
     vec = np.zeros((1, num_features), dtype=np.float32)
-    vec[0, 0] = 9_500_000.0                       # newbalanceOrig: healthy balance
+    vec[0, 0] = 9_500_000.0                       # balance-related proxy: healthy balance
     vec[0, 1] = 0.0                               # is_transfer: internal
     vec[0, 2] = np.log1p(500_000)                 # amount_log: ~13.1
     vec[0, 3] = 0.05                              # balance_emptying_ratio: 5%
@@ -116,6 +106,14 @@ def normal_features(num_features):
     vec[0, 5] = np.cos(2 * np.pi * 14 / 24)       # cos_hour: 2 PM
     vec[0, 8] = 1.0                               # velocity_1h: 1 txn
     vec[0, 12] = 0.0                              # new_recipient_flag: known
+    # v2 features (v3 indices): small pct, daytime, weekday, non-round
+    vec[0, 13] = 0.0                              # is_round_amount: 500K not round
+    vec[0, 14] = 0.0                              # round_amount_log: 0 if not round
+    vec[0, 15] = 5.0                              # amount_to_balance_pct: 5%
+    vec[0, 16] = 0.0                              # is_total_drain: 5% < 99%
+    vec[0, 17] = 0.0                              # is_night: 2 PM is not
+    vec[0, 18] = 1.0                              # is_office_hours: 2 PM yes
+    vec[0, 19] = 0.0                              # is_weekend: weekday
     return vec
 
 
@@ -250,21 +248,49 @@ class TestReasonCodesSuspicious:
 class TestReasonCodesNormal:
     """Reason codes for a low-risk transaction."""
 
-    def test_normal_vs_suspicious_count(
+    def test_normal_respects_max_codes(
+        self, explainer, normal_features, feature_columns, code_map
+    ):
+        """Normal tx should respect the max_codes cap."""
+        shap_norm = explainer.shap_values(normal_features)
+        codes_norm = compute_reason_codes(shap_norm, feature_columns, code_map)
+        assert len(codes_norm) <= 5, (
+            f"Normal tx produced {len(codes_norm)} codes, exceeds max of 5"
+        )
+
+    def test_suspicious_respects_max_codes(
+        self, explainer, suspicious_features, feature_columns, code_map
+    ):
+        """Suspicious tx should respect the max_codes cap."""
+        shap_sus = explainer.shap_values(suspicious_features)
+        codes_sus = compute_reason_codes(shap_sus, feature_columns, code_map)
+        assert len(codes_sus) <= 5, (
+            f"Suspicious tx produced {len(codes_sus)} codes, exceeds max of 5"
+        )
+
+    def test_suspicious_score_higher_than_normal(
         self, explainer, suspicious_features, normal_features,
         feature_columns, code_map
     ):
-        """Normal tx should have ≤ reason codes than suspicious tx."""
+        """Suspicious tx should produce higher |weight| reason codes than normal.
+
+        The model's predicted fraud probability is what matters in production.
+        We verify it indirectly by checking the max |SHAP weight| of any reason
+        code for suspicious > normal — strong features drive the prediction
+        regardless of the total |SHAP| spread.
+        """
         shap_sus = explainer.shap_values(suspicious_features)
         shap_norm = explainer.shap_values(normal_features)
 
         codes_sus = compute_reason_codes(shap_sus, feature_columns, code_map)
         codes_norm = compute_reason_codes(shap_norm, feature_columns, code_map)
 
-        # Normal should not have more high-weight codes than suspicious
-        assert len(codes_norm) <= len(codes_sus), (
-            f"Normal tx has {len(codes_norm)} codes, "
-            f"suspicious has {len(codes_sus)} — expected normal ≤ suspicious"
+        max_sus = max((abs(w) for _, w in codes_sus), default=0.0)
+        max_norm = max((abs(w) for _, w in codes_norm), default=0.0)
+
+        assert max_sus > max_norm, (
+            f"Suspicious max |weight|={max_sus:.4f}, "
+            f"normal max |weight|={max_norm:.4f} — expected suspicious > normal"
         )
 
 
@@ -350,3 +376,122 @@ class TestCodeMapSync:
             f"Features without reason codes: {missing}. "
             f"Add them to SHAP_FEATURE_TO_CODE."
         )
+
+
+class TestRuntimeFeatures:
+    """Unit tests for the v2 request-time feature functions.
+
+    These run independently of the saved model — they verify the new
+    pure functions in app.core.features_runtime before retraining.
+    """
+
+    def test_round_amount_detection(self):
+        from app.core.features_runtime import is_round_amount, round_amount_log
+        # Round numbers
+        assert is_round_amount(1_000_000) == 1.0
+        assert is_round_amount(10_000_000) == 1.0
+        assert is_round_amount(100_000_000) == 1.0
+        # Non-round
+        assert is_round_amount(500_001) == 0.0
+        assert is_round_amount(123_456) == 0.0
+        # Edge cases
+        assert is_round_amount(0) == 0.0
+        assert is_round_amount(-100) == 0.0
+        # Round log
+        assert round_amount_log(10_000_000) > 0
+        assert round_amount_log(500_001) == 0.0
+
+    def test_amount_balance_derivatives(self):
+        from app.core.features_runtime import amount_to_balance_pct, is_total_drain
+        # Normal case
+        assert amount_to_balance_pct(50_000_000, 100_000_000) == 50.0
+        assert is_total_drain(99_000_000, 100_000_000) == 1.0
+        assert is_total_drain(50_000_000, 100_000_000) == 0.0
+        # Zero balance guard
+        assert amount_to_balance_pct(1000, 0) == 0.0
+        assert is_total_drain(1000, 0) == 0.0
+        # post_balance_ratio was removed in v3 — see docs/mlops.md.
+
+    def test_time_buckets(self):
+        from app.core.features_runtime import is_night, is_office_hours, is_weekend
+        # Night (00:00 - 05:59)
+        assert is_night(0) == 1.0
+        assert is_night(5) == 1.0
+        assert is_night(6) == 0.0
+        # Office (09:00 - 17:59)
+        assert is_office_hours(9) == 1.0
+        assert is_office_hours(17) == 1.0
+        assert is_office_hours(18) == 0.0
+        assert is_office_hours(8) == 0.0
+        # Weekend (Sat=5, Sun=6)
+        assert is_weekend(5) == 1.0
+        assert is_weekend(6) == 1.0
+        assert is_weekend(0) == 0.0
+
+    def test_compute_request_features_keys(self):
+        """compute_request_features must return all v2 feature names."""
+        from datetime import datetime, timezone
+        from app.core.features_runtime import compute_request_features
+
+        feats = compute_request_features(
+            amount=10_000_000,
+            from_balance=50_000_000,
+            transaction_type="INTERBANK",
+            occurred_at=datetime(2026, 6, 24, 3, 0, 0, tzinfo=timezone.utc),
+        )
+
+        required = {
+            # v1 (kept)
+            "is_transfer", "amount_log", "balance_emptying_ratio",
+            "sin_hour", "cos_hour", "sin_dow", "cos_dow",
+            # v2 (new)
+            "is_round_amount", "round_amount_log",
+            "amount_to_balance_pct", "is_total_drain",
+            "is_night", "is_office_hours", "is_weekend",
+            # v3: newbalanceOrig and post_balance_ratio intentionally absent
+            # — see docs/mlops.md for the PaySim simulator leak rationale.
+            # v4 (added): amount tier + interaction features
+            "amount_tier_micro", "amount_tier_small", "amount_tier_medium",
+            "is_transfer_and_draining", "is_medium_and_draining",
+        }
+        missing = required - set(feats.keys())
+        assert not missing, f"compute_request_features missing keys: {missing}"
+
+    def test_amount_tier_features(self):
+        """Amount tier functions return 1.0 for amounts in the correct range."""
+        from app.core.features_runtime import (
+            amount_tier_micro, amount_tier_small, amount_tier_medium
+        )
+        # micro: < 1M
+        assert amount_tier_micro(500_000) == 1.0
+        assert amount_tier_micro(999_999) == 1.0
+        assert amount_tier_micro(1_000_000) == 0.0
+        assert amount_tier_micro(50_000_000) == 0.0
+        # small: [1M, 10M)
+        assert amount_tier_small(1_000_000) == 1.0
+        assert amount_tier_small(5_000_000) == 1.0
+        assert amount_tier_small(9_999_999) == 1.0
+        assert amount_tier_small(10_000_000) == 0.0
+        assert amount_tier_small(500_000) == 0.0
+        # medium: [10M, 100M)
+        assert amount_tier_medium(10_000_000) == 1.0
+        assert amount_tier_medium(50_000_000) == 1.0
+        assert amount_tier_medium(99_999_999) == 1.0
+        assert amount_tier_medium(100_000_000) == 0.0
+        assert amount_tier_medium(5_000_000) == 0.0
+
+    def test_interaction_features(self):
+        """Interaction features combine is_transfer + balance_emptying."""
+        from app.core.features_runtime import (
+            is_transfer_and_draining, is_medium_and_draining
+        )
+        # transfer + draining
+        assert is_transfer_and_draining(1.0, 0.95) == 1.0
+        assert is_transfer_and_draining(1.0, 0.5) == 0.0
+        assert is_transfer_and_draining(0.0, 0.95) == 0.0
+        # medium + draining
+        assert is_medium_and_draining(50_000_000, 50_000_000) == 1.0  # 100% drain
+        assert is_medium_and_draining(50_000_000, 100_000_000) == 0.0  # 50% drain
+        assert is_medium_and_draining(5_000_000, 5_000_000) == 0.0  # not medium
+        # zero balance guard
+        assert is_medium_and_draining(50_000_000, 0) == 0.0

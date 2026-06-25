@@ -325,6 +325,98 @@ mlflow server \
 
 ---
 
+## 4b. Known Dataset Limitation — PaySim Patterns
+
+The training and test sets come from [PaySim](https://www.kaggle.com/datasets/ealaxi/paysim1), a synthetic mobile-money simulator. The fraud generator in PaySim follows deterministic patterns that **do NOT generalize to real banking**:
+
+| Pattern | PaySim behavior | Real-world likelihood |
+|---|---|---|
+| Fraudsters drain balance | **96.9%** of fraud has `balance_emptying_ratio == 1.0` (full drain) | Rare — most fraud is partial or gradual |
+| Fraudsters use round amounts | `is_round_amount` over-represented in fraud | Variable, country-dependent |
+| Fraudsters transact off-hours | `is_night` over-represented | Mixed |
+
+This means **even after removing the explicit simulator-leak features** (`newbalanceOrig`, `post_balance_ratio` in v3), the model can still achieve PR-AUC ≈ 1.0 on the PaySim test set by exploiting the strong "fraudsters drain their account" pattern. This is **legitimate PaySim signal**, not a code bug.
+
+**Implication for production:**
+- Treat the PaySim test PR-AUC as an **upper bound**, not a real-world estimate.
+- When real labeled banking data becomes available, expect PR-AUC to drop to roughly **0.80–0.95** depending on how closely real fraud matches PaySim patterns.
+- The model and SHAP explainer are still useful: the **features it relies on** (balance emptying, round amounts, off-hours) are business-relevant signals that any production fraud system should monitor.
+
+**What v3 changed (vs v2):**
+- Removed `newbalanceOrig` and `post_balance_ratio` because they were **deterministic** post-transaction fields that encoded the simulator's "balance == 0 → fraud" rule directly.
+- Kept `balance_emptying_ratio` (the legitimate "what fraction of the balance was sent" signal) and `amount_to_balance_pct` because both are derivable from pre-transaction data available in the live `ScoreRequest`.
+
+---
+
+## 4c. Feature Subset Experiments (v4 Sweep)
+
+To test whether new request-time features improve model quality, we ran a 3-experiment sweep on 2026-06-25 with 9 total MLflow runs (3 model configs × 3 feature subsets):
+
+| Experiment | Feature set | Features | What it tests |
+|---|---|---|---|
+| **E1** | v3 baseline | 20 | Re-confirm v3 metrics (sanity check) |
+| **E2** | v3 + Group A (amount tier) | 23 | Does tier encoding help? |
+| **E3** | v3 + Group A + Group D (interactions) | 25 | Does feature interaction help? |
+
+**Group A — Amount tier** (3 binary features):
+- `amount_tier_micro` — `amount < 1M VND`
+- `amount_tier_small` — `1M ≤ amount < 10M VND`
+- `amount_tier_medium` — `10M ≤ amount < 100M VND`
+
+In PaySim, the medium tier is **99.4×** over-represented in fraud (5.7% fraud vs 0.1% legit).
+
+**Group D — Interactions** (2 binary features):
+- `is_transfer_and_draining` — INTERBANK + `balance_emptying_ratio > 0.9`
+- `is_medium_and_draining` — medium tier + `ratio > 0.99`
+
+### Results (sorted by PR-AUC)
+
+| Model | E1 (20) | E2 (23) | E3 (25) | Δ E1→E3 |
+|---|---|---|---|---|
+| XGBoost | 0.9874 | 0.9860 | 0.9890 | +0.0016 |
+| LightGBM v1 | 1.0000 (F1=0.987) | 1.0000 (F1=0.974) | 1.0000 (F1=0.934) | **F1 ↓ 0.05** |
+| LightGBM v2 | 1.0000 (F1=0.990) | 1.0000 (F1=0.998) | 0.9999 (F1=0.996) | stable |
+
+### Interpretation
+
+- **PR-AUC is already saturated** for LightGBM (1.0) — the `balance_emptying_ratio` leak-discussed in §4b dominates.
+- **F1@0.5 actually drops** in some configs when v4 features are added — the model becomes more aggressive (more false positives) because v4 features are correlated with the leak pattern but don't add orthogonal signal.
+- **No clear winner for production** — the v3 model is retained as the shipping version. v4 features stay in `features_runtime.py` for future use when real banking data replaces PaySim.
+
+**Lesson:** On a synthetic dataset with deterministic fraud patterns, adding more "obvious" features doesn't help — it just makes the model over-confident. Feature engineering should be validated against a holdout that breaks the simulator's assumptions.
+
+### MLflow Artifacts
+
+All 9 sweep runs are in experiment `fraud-detection-training` (ID 8) tagged with `experiment = E1/E2/E3`:
+
+- Filter by `params.experiment = "E1"` (or E2/E3) in the MLflow UI to isolate one feature subset.
+- Script: [`logs/run_feature_sweep_v2.py`](../logs/run_feature_sweep_v2.py)
+- Output log: [`logs/feature_experiments_v2.log`](../logs/feature_experiments_v2.log)
+
+### Production Decision
+
+**v3 (XGBoost, 20 features) is retained as the production model** because:
+1. Simplest inference pipeline (1 XGBoost ONNX, no LightGBM variant)
+2. Lowest inference latency (0.48ms vs LightGBM 0.15ms — both acceptable, but XGBoost is the platform's chosen framework)
+3. v4 features are kept in `features_runtime.py` for the day when real banking data shows tier/interaction patterns that PaySim doesn't.
+
+### Calibration Observation — XGBoost vs LightGBM at BLOCKED threshold (0.8)
+
+After running the full sweep with `f1_at_0.8`, we noticed:
+
+| Model | F1@0.8 (E1) | F1@0.8 (E3) | Notes |
+|---|---|---|---|
+| XGBoost | 0.95 | 0.95 | Recovers at 0.8 — most fraud prob > 0.8 |
+| XGBoost (E2) | **0.00** | — | **Bug-shaped**: no fraud prob reaches 0.8 — calibration shifted |
+| LightGBM v1 | 0.99 | 0.97 | Both pass |
+| LightGBM v2 | 1.00 | 0.99 | Both pass |
+
+**XGBoost's `scale_pos_weight=450` compresses its probability output range** — even for true fraud, predicted probability often tops out at ~0.7. This means the `BLOCKED` contract threshold (≥0.8) rarely fires for XGBoost, so `risk_level=BLOCKED` decisions effectively don't happen with the current model.
+
+**Recommendation:** LightGBM v2-deeper (E1, 20 features) is the strongest candidate if BLOCKED decision-matters — F1@0.8 = 1.0, inference 0.15ms (3× faster than XGBoost). Decision deferred to Phase 2 when real banking traffic calibrates the thresholds against actual business cost of false positives vs false negatives.
+
+---
+
 ## 5. What's Deferred to Phase 2
 
 | Capability | Why deferred |

@@ -1,0 +1,764 @@
+{
+  "runs": [
+    {
+      "info": {
+        "run_uuid": "4bbb9e69947b41f4abe3af73407461b7",
+        "experiment_id": "8",
+        "run_name": "lgbm-v3-regularized-20260625-073719",
+        "user_id": "ngocduy",
+        "status": "FINISHED",
+        "start_time": 1782373061111,
+        "end_time": 1782373063501,
+        "artifact_uri": "mlflow-artifacts:/8/4bbb9e69947b41f4abe3af73407461b7/artifacts",
+        "lifecycle_stage": "active",
+        "run_id": "4bbb9e69947b41f4abe3af73407461b7"
+      },
+      "data": {
+        "metrics": [
+          {
+            "key": "best_iteration",
+            "value": 1.0,
+            "timestamp": 1782373063296,
+            "step": 0
+          },
+          {
+            "key": "precision_at_0.5",
+            "value": 0.9987129987129987,
+            "timestamp": 1782373063326,
+            "step": 0
+          },
+          {
+            "key": "precision_at_0.8",
+            "value": 0.9987129987129987,
+            "timestamp": 1782373063345,
+            "step": 0
+          },
+          {
+            "key": "inference_ms",
+            "value": 0.153125511133112,
+            "timestamp": 1782373063365,
+            "step": 0
+          },
+          {
+            "key": "test_roc_auc",
+            "value": 0.9999994972517461,
+            "timestamp": 1782373063312,
+            "step": 0
+          },
+          {
+            "key": "recall_at_0.5",
+            "value": 1.0,
+            "timestamp": 1782373063333,
+            "step": 0
+          },
+          {
+            "key": "recall_at_0.8",
+            "value": 1.0,
+            "timestamp": 1782373063352,
+            "step": 0
+          },
+          {
+            "key": "model_size_mb",
+            "value": 0.005341529846191406,
+            "timestamp": 1782373063372,
+            "step": 0
+          },
+          {
+            "key": "train_seconds",
+            "value": 1.9737727500032634,
+            "timestamp": 1782373063279,
+            "step": 0
+          },
+          {
+            "key": "test_pr_auc",
+            "value": 0.9999601016760977,
+            "timestamp": 1782373063319,
+            "step": 0
+          },
+          {
+            "key": "f1_at_0.5",
+            "value": 0.9993560849967804,
+            "timestamp": 1782373063339,
+            "step": 0
+          },
+          {
+            "key": "f1_at_0.8",
+            "value": 0.9993560849967804,
+            "timestamp": 1782373063358,
+            "step": 0
+          },
+          {
+            "key": "flagged_pct_at_0.5",
+            "value": 2.2787260249868027,
+            "timestamp": 1782373063379,
+            "step": 0
+          }
+        ],
+        "params": [
+          {
+            "key": "objective",
+            "value": "binary"
+          },
+          {
+            "key": "metric",
+            "value": "average_precision"
+          },
+          {
+            "key": "num_leaves",
+            "value": "15"
+          },
+          {
+            "key": "learning_rate",
+            "value": "0.05"
+          },
+          {
+            "key": "max_depth",
+            "value": "4"
+          },
+          {
+            "key": "min_child_samples",
+            "value": "100"
+          },
+          {
+            "key": "scale_pos_weight",
+            "value": "449.85216085433007"
+          },
+          {
+            "key": "subsample",
+            "value": "0.8"
+          },
+          {
+            "key": "colsample_bytree",
+            "value": "0.8"
+          },
+          {
+            "key": "reg_alpha",
+            "value": "1.0"
+          },
+          {
+            "key": "reg_lambda",
+            "value": "1.0"
+          },
+          {
+            "key": "verbose",
+            "value": "-1"
+          },
+          {
+            "key": "n_jobs",
+            "value": "-1"
+          },
+          {
+            "key": "random_state",
+            "value": "42"
+          },
+          {
+            "key": "model_type",
+            "value": "lightgbm"
+          },
+          {
+            "key": "model_version",
+            "value": "lgbm-v3-regularized"
+          },
+          {
+            "key": "feature_set",
+            "value": "v3 (20 features, leak-dropped)"
+          },
+          {
+            "key": "git_sha",
+            "value": "65f40d1"
+          },
+          {
+            "key": "n_estimators",
+            "value": "2000"
+          },
+          {
+            "key": "early_stopping_rounds",
+            "value": "50"
+          }
+        ],
+        "tags": [
+          {
+            "key": "mlflow.user",
+            "value": "ngocduy"
+          },
+          {
+            "key": "mlflow.source.name",
+            "value": "/Users/ngocduy/PROJECTS/smart-banking-system/ml/.venv/lib/python3.11/site-packages/ipykernel_launcher.py"
+          },
+          {
+            "key": "mlflow.source.type",
+            "value": "LOCAL"
+          },
+          {
+            "key": "mlflow.runName",
+            "value": "lgbm-v3-regularized-20260625-073719"
+          }
+        ]
+      },
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "info": {
+        "run_uuid": "cfc303e0c2954cd79cf5fbee3c507999",
+        "experiment_id": "8",
+        "run_name": "lgbm-v2-deeper-20260625-073719",
+        "user_id": "ngocduy",
+        "status": "FINISHED",
+        "start_time": 1782373054654,
+        "end_time": 1782373061090,
+        "artifact_uri": "mlflow-artifacts:/8/cfc303e0c2954cd79cf5fbee3c507999/artifacts",
+        "lifecycle_stage": "active",
+        "run_id": "cfc303e0c2954cd79cf5fbee3c507999"
+      },
+      "data": {
+        "metrics": [
+          {
+            "key": "train_seconds",
+            "value": 5.997477041993989,
+            "timestamp": 1782373060850,
+            "step": 0
+          },
+          {
+            "key": "test_pr_auc",
+            "value": 0.9999999999999999,
+            "timestamp": 1782373060889,
+            "step": 0
+          },
+          {
+            "key": "f1_at_0.5",
+            "value": 0.9897959183673469,
+            "timestamp": 1782373060910,
+            "step": 0
+          },
+          {
+            "key": "f1_at_0.8",
+            "value": 1.0,
+            "timestamp": 1782373060934,
+            "step": 0
+          },
+          {
+            "key": "flagged_pct_at_0.5",
+            "value": 2.322716874890023,
+            "timestamp": 1782373060958,
+            "step": 0
+          },
+          {
+            "key": "best_iteration",
+            "value": 82.0,
+            "timestamp": 1782373060874,
+            "step": 0
+          },
+          {
+            "key": "precision_at_0.5",
+            "value": 0.9797979797979798,
+            "timestamp": 1782373060896,
+            "step": 0
+          },
+          {
+            "key": "precision_at_0.8",
+            "value": 1.0,
+            "timestamp": 1782373060917,
+            "step": 0
+          },
+          {
+            "key": "inference_ms",
+            "value": 0.15375000657513738,
+            "timestamp": 1782373060943,
+            "step": 0
+          },
+          {
+            "key": "test_roc_auc",
+            "value": 1.0,
+            "timestamp": 1782373060882,
+            "step": 0
+          },
+          {
+            "key": "recall_at_0.5",
+            "value": 1.0,
+            "timestamp": 1782373060902,
+            "step": 0
+          },
+          {
+            "key": "recall_at_0.8",
+            "value": 1.0,
+            "timestamp": 1782373060926,
+            "step": 0
+          },
+          {
+            "key": "model_size_mb",
+            "value": 0.41161441802978516,
+            "timestamp": 1782373060950,
+            "step": 0
+          }
+        ],
+        "params": [
+          {
+            "key": "objective",
+            "value": "binary"
+          },
+          {
+            "key": "metric",
+            "value": "average_precision"
+          },
+          {
+            "key": "num_leaves",
+            "value": "63"
+          },
+          {
+            "key": "learning_rate",
+            "value": "0.03"
+          },
+          {
+            "key": "max_depth",
+            "value": "8"
+          },
+          {
+            "key": "min_child_samples",
+            "value": "50"
+          },
+          {
+            "key": "scale_pos_weight",
+            "value": "449.85216085433007"
+          },
+          {
+            "key": "subsample",
+            "value": "0.8"
+          },
+          {
+            "key": "colsample_bytree",
+            "value": "0.8"
+          },
+          {
+            "key": "reg_alpha",
+            "value": "0.1"
+          },
+          {
+            "key": "reg_lambda",
+            "value": "1.0"
+          },
+          {
+            "key": "verbose",
+            "value": "-1"
+          },
+          {
+            "key": "n_jobs",
+            "value": "-1"
+          },
+          {
+            "key": "random_state",
+            "value": "42"
+          },
+          {
+            "key": "model_type",
+            "value": "lightgbm"
+          },
+          {
+            "key": "model_version",
+            "value": "lgbm-v2-deeper"
+          },
+          {
+            "key": "feature_set",
+            "value": "v3 (20 features, leak-dropped)"
+          },
+          {
+            "key": "git_sha",
+            "value": "65f40d1"
+          },
+          {
+            "key": "n_estimators",
+            "value": "2000"
+          },
+          {
+            "key": "early_stopping_rounds",
+            "value": "50"
+          }
+        ],
+        "tags": [
+          {
+            "key": "mlflow.user",
+            "value": "ngocduy"
+          },
+          {
+            "key": "mlflow.source.name",
+            "value": "/Users/ngocduy/PROJECTS/smart-banking-system/ml/.venv/lib/python3.11/site-packages/ipykernel_launcher.py"
+          },
+          {
+            "key": "mlflow.source.type",
+            "value": "LOCAL"
+          },
+          {
+            "key": "mlflow.runName",
+            "value": "lgbm-v2-deeper-20260625-073719"
+          }
+        ]
+      },
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "info": {
+        "run_uuid": "4d217e65998a40f5a555e2e1ba5d9a31",
+        "experiment_id": "8",
+        "run_name": "lgbm-v1-default-20260625-073719",
+        "user_id": "ngocduy",
+        "status": "FINISHED",
+        "start_time": 1782373044216,
+        "end_time": 1782373054632,
+        "artifact_uri": "mlflow-artifacts:/8/4d217e65998a40f5a555e2e1ba5d9a31/artifacts",
+        "lifecycle_stage": "active",
+        "run_id": "4d217e65998a40f5a555e2e1ba5d9a31"
+      },
+      "data": {
+        "metrics": [
+          {
+            "key": "test_roc_auc",
+            "value": 1.0,
+            "timestamp": 1782373054438,
+            "step": 0
+          },
+          {
+            "key": "recall_at_0.5",
+            "value": 1.0,
+            "timestamp": 1782373054464,
+            "step": 0
+          },
+          {
+            "key": "recall_at_0.8",
+            "value": 1.0,
+            "timestamp": 1782373054485,
+            "step": 0
+          },
+          {
+            "key": "model_size_mb",
+            "value": 0.42557716369628906,
+            "timestamp": 1782373054506,
+            "step": 0
+          },
+          {
+            "key": "train_seconds",
+            "value": 9.87444479201804,
+            "timestamp": 1782373054373,
+            "step": 0
+          },
+          {
+            "key": "test_pr_auc",
+            "value": 1.0,
+            "timestamp": 1782373054447,
+            "step": 0
+          },
+          {
+            "key": "f1_at_0.5",
+            "value": 0.9872773536895675,
+            "timestamp": 1782373054472,
+            "step": 0
+          },
+          {
+            "key": "f1_at_0.8",
+            "value": 0.9885350318471338,
+            "timestamp": 1782373054492,
+            "step": 0
+          },
+          {
+            "key": "flagged_pct_at_0.5",
+            "value": 2.334447768197548,
+            "timestamp": 1782373054513,
+            "step": 0
+          },
+          {
+            "key": "best_iteration",
+            "value": 124.0,
+            "timestamp": 1782373054428,
+            "step": 0
+          },
+          {
+            "key": "precision_at_0.5",
+            "value": 0.9748743718592965,
+            "timestamp": 1782373054454,
+            "step": 0
+          },
+          {
+            "key": "precision_at_0.8",
+            "value": 0.9773299748110831,
+            "timestamp": 1782373054479,
+            "step": 0
+          },
+          {
+            "key": "inference_ms",
+            "value": 0.1571455068187788,
+            "timestamp": 1782373054499,
+            "step": 0
+          }
+        ],
+        "params": [
+          {
+            "key": "objective",
+            "value": "binary"
+          },
+          {
+            "key": "metric",
+            "value": "average_precision"
+          },
+          {
+            "key": "num_leaves",
+            "value": "31"
+          },
+          {
+            "key": "learning_rate",
+            "value": "0.05"
+          },
+          {
+            "key": "max_depth",
+            "value": "-1"
+          },
+          {
+            "key": "min_child_samples",
+            "value": "20"
+          },
+          {
+            "key": "scale_pos_weight",
+            "value": "449.85216085433007"
+          },
+          {
+            "key": "subsample",
+            "value": "0.8"
+          },
+          {
+            "key": "colsample_bytree",
+            "value": "0.8"
+          },
+          {
+            "key": "reg_alpha",
+            "value": "0.0"
+          },
+          {
+            "key": "reg_lambda",
+            "value": "1.0"
+          },
+          {
+            "key": "verbose",
+            "value": "-1"
+          },
+          {
+            "key": "n_jobs",
+            "value": "-1"
+          },
+          {
+            "key": "random_state",
+            "value": "42"
+          },
+          {
+            "key": "model_type",
+            "value": "lightgbm"
+          },
+          {
+            "key": "model_version",
+            "value": "lgbm-v1-default"
+          },
+          {
+            "key": "feature_set",
+            "value": "v3 (20 features, leak-dropped)"
+          },
+          {
+            "key": "git_sha",
+            "value": "65f40d1"
+          },
+          {
+            "key": "n_estimators",
+            "value": "2000"
+          },
+          {
+            "key": "early_stopping_rounds",
+            "value": "50"
+          }
+        ],
+        "tags": [
+          {
+            "key": "mlflow.user",
+            "value": "ngocduy"
+          },
+          {
+            "key": "mlflow.source.name",
+            "value": "/Users/ngocduy/PROJECTS/smart-banking-system/ml/.venv/lib/python3.11/site-packages/ipykernel_launcher.py"
+          },
+          {
+            "key": "mlflow.source.type",
+            "value": "LOCAL"
+          },
+          {
+            "key": "mlflow.runName",
+            "value": "lgbm-v1-default-20260625-073719"
+          }
+        ]
+      },
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "info": {
+        "run_uuid": "5876f40983714471a1a537c4ba97a740",
+        "experiment_id": "8",
+        "run_name": "xgboost-v1-20260625-073719-65f40d1",
+        "user_id": "ngocduy",
+        "status": "FINISHED",
+        "start_time": 1782373039339,
+        "end_time": 1782373043143,
+        "artifact_uri": "mlflow-artifacts:/8/5876f40983714471a1a537c4ba97a740/artifacts",
+        "lifecycle_stage": "active",
+        "run_id": "5876f40983714471a1a537c4ba97a740"
+      },
+      "data": {
+        "metrics": [
+          {
+            "key": "test_roc_auc",
+            "value": 0.9995728186758756,
+            "timestamp": 1782373039454,
+            "step": 0
+          },
+          {
+            "key": "test_recall",
+            "value": 0.9974226804123711,
+            "timestamp": 1782373039491,
+            "step": 0
+          },
+          {
+            "key": "val_recall",
+            "value": 0.9936868686868687,
+            "timestamp": 1782373039520,
+            "step": 0
+          },
+          {
+            "key": "test_pr_auc",
+            "value": 0.9874314287854308,
+            "timestamp": 1782373039466,
+            "step": 0
+          },
+          {
+            "key": "test_f1",
+            "value": 0.9514443761524278,
+            "timestamp": 1782373039503,
+            "step": 0
+          },
+          {
+            "key": "val_f1",
+            "value": 0.9481927710843373,
+            "timestamp": 1782373039527,
+            "step": 0
+          },
+          {
+            "key": "test_precision",
+            "value": 0.9095182138660399,
+            "timestamp": 1782373039478,
+            "step": 0
+          },
+          {
+            "key": "val_precision",
+            "value": 0.9066820276497696,
+            "timestamp": 1782373039512,
+            "step": 0
+          },
+          {
+            "key": "best_f1_threshold",
+            "value": 0.7500000000000002,
+            "timestamp": 1782373039536,
+            "step": 0
+          }
+        ],
+        "params": [
+          {
+            "key": "model_type",
+            "value": "xgboost"
+          },
+          {
+            "key": "model_version",
+            "value": "v1.0.0"
+          },
+          {
+            "key": "num_features",
+            "value": "20"
+          },
+          {
+            "key": "feature_columns",
+            "value": "['is_transfer', 'amount_log', 'balance_emptying_ratio', 'sin_hour', 'cos_hour', 'sin_dow', 'cos_dow', 'velocity_1h', 'velocity_24h', 'velocity_3d', 'amount_zscore', 'new_recipient_flag', 'time_since_last_txn', 'is_round_amount', 'round_amount_log', 'amount_to_balance_pct', 'is_total_drain', 'is_night', 'is_office_hours', 'is_weekend']"
+          },
+          {
+            "key": "scale_pos_weight",
+            "value": "449.85216085433007"
+          },
+          {
+            "key": "best_iteration",
+            "value": "106"
+          },
+          {
+            "key": "train_samples",
+            "value": "2701957"
+          },
+          {
+            "key": "val_samples",
+            "value": "33583"
+          },
+          {
+            "key": "test_samples",
+            "value": "34098"
+          },
+          {
+            "key": "max_depth",
+            "value": "6"
+          },
+          {
+            "key": "learning_rate",
+            "value": "0.05"
+          },
+          {
+            "key": "n_estimators",
+            "value": "2000"
+          },
+          {
+            "key": "subsample",
+            "value": "0.8"
+          },
+          {
+            "key": "colsample_bytree",
+            "value": "0.8"
+          },
+          {
+            "key": "gamma",
+            "value": "None"
+          },
+          {
+            "key": "reg_alpha",
+            "value": "None"
+          },
+          {
+            "key": "reg_lambda",
+            "value": "None"
+          }
+        ],
+        "tags": [
+          {
+            "key": "mlflow.user",
+            "value": "ngocduy"
+          },
+          {
+            "key": "mlflow.source.name",
+            "value": "/Users/ngocduy/PROJECTS/smart-banking-system/ml/.venv/lib/python3.11/site-packages/ipykernel_launcher.py"
+          },
+          {
+            "key": "mlflow.source.type",
+            "value": "LOCAL"
+          },
+          {
+            "key": "mlflow.runName",
+            "value": "xgboost-v1-20260625-073719-65f40d1"
+          },
+          {
+            "key": "mlflow.log-model.history",
+            "value": "[{\"run_id\": \"5876f40983714471a1a537c4ba97a740\", \"artifact_path\": \"model\", \"utc_time_created\": \"2026-06-25 07:37:19.590666\", \"model_uuid\": \"c77d7728c04e4de7a700f8efa18a37b2\", \"flavors\": {\"python_function\": {\"loader_module\": \"mlflow.xgboost\", \"python_version\": \"3.11.11\", \"data\": \"model.xgb\", \"env\": {\"conda\": \"conda.yaml\", \"virtualenv\": \"python_env.yaml\"}}, \"xgboost\": {\"xgb_version\": \"3.2.0\", \"data\": \"model.xgb\", \"model_class\": \"xgboost.sklearn.XGBClassifier\", \"model_format\": \"xgb\", \"code\": null}}}]"
+          }
+        ]
+      },
+      "inputs": {},
+      "outputs": {}
+    }
+  ]
+}

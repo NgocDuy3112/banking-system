@@ -3,7 +3,7 @@ import logging
 import pickle
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import onnxruntime as ort
@@ -71,11 +71,11 @@ class ModelService:
         Fetches historical features from PostgreSQL.
         """
         repo = get_feature_repository()
-        
+
         # 1. Get account IDs
         from_account_id = await repo.get_account_id(request.from_account_number)
         to_account_id = await repo.get_account_id(request.to_account_number)
-        
+
         # 2. Fetch historical features if accounts exist
         hist_features = {
             "velocity_1h": constants.DEFAULT_VELOCITY_1H,
@@ -83,49 +83,33 @@ class ModelService:
             "velocity_3d": constants.DEFAULT_VELOCITY_3D,
             "amount_zscore": constants.DEFAULT_AMOUNT_ZSCORE,
             "new_recipient_flag": constants.DEFAULT_NEW_RECIPIENT_FLAG,
-            "time_since_last_txn": constants.DEFAULT_TIME_SINCE_LAST_TXN
+            "time_since_last_txn": constants.DEFAULT_TIME_SINCE_LAST_TXN,
         }
-        
+
         if from_account_id and to_account_id:
             hist_features = await repo.get_historical_features(
-                from_account_id, 
-                to_account_id, 
-                float(request.amount)
+                from_account_id,
+                to_account_id,
+                float(request.amount),
             )
-        
-        # 3. Simple derivations from request
-        amount = float(request.amount)
-        amount_log = np.log1p(amount)
-        
-        from_balance = float(request.from_balance_before)
-        balance_emptying_ratio = amount / from_balance if from_balance > 0 else 0.0
-        
-        # Time features
-        dt = request.occurred_at
-        hour = dt.hour
-        dow = dt.weekday()
-        
-        sin_hour = np.sin(2 * np.pi * hour / constants.HOURS_IN_DAY)
-        cos_hour = np.cos(2 * np.pi * hour / constants.HOURS_IN_DAY)
-        sin_dow = np.sin(2 * np.pi * dow / constants.DAYS_IN_WEEK)
-        cos_dow = np.cos(2 * np.pi * dow / constants.DAYS_IN_WEEK)
-        
-        is_transfer = 1.0 if request.transaction_type == "INTERBANK" else 0.0
-        newbalanceOrig = from_balance - amount
 
-        # Map to the exact order in metadata
-        feature_map = {
-            "newbalanceOrig": newbalanceOrig,
-            "is_transfer": is_transfer,
-            "amount_log": amount_log,
-            "balance_emptying_ratio": balance_emptying_ratio,
-            "sin_hour": sin_hour,
-            "cos_hour": cos_hour,
-            "sin_dow": sin_dow,
-            "cos_dow": cos_dow,
-            **hist_features
-        }
-        
+        # 3. Request-time features (pure: same inputs → same outputs)
+        #    See app/core/features_runtime.py for definitions; kept in lockstep
+        #    with notebook 03 to avoid training/serving skew.
+        from app.core.features_runtime import compute_request_features
+
+        request_features = compute_request_features(
+            amount=float(request.amount),
+            from_balance=float(request.from_balance_before),
+            transaction_type=request.transaction_type,
+            occurred_at=request.occurred_at,
+        )
+
+        # 4. Assemble in the exact order declared in feature_metadata.json.
+        #    Unknown columns default to 0.0 so missing features don't crash
+        #    inference — this matches XGBoost's behaviour during training.
+        feature_map = {**request_features, **hist_features}
+
         features = [feature_map.get(col, 0.0) for col in self.feature_columns]
         return np.array([features], dtype=np.float32)
 
@@ -252,7 +236,8 @@ class ModelService:
             risk_level=risk
         )
 
-# Singleton instance
+
+
 model_service = None
 
 def get_model_service() -> ModelService:
