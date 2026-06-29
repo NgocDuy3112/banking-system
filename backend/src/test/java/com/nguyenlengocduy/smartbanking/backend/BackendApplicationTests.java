@@ -1,4 +1,4 @@
-package com.nguyenlengocduy.smartbanking.backend;
+package com.smartbanking.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

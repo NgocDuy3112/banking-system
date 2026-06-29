@@ -74,7 +74,7 @@ Tài khoản ngân hàng của Customer.
 | id | UUID | Primary key |
 | account_number | VARCHAR | Unique, format: 9-14 số |
 | customer_profile_id | UUID | FK → CustomerProfile |
-| account_type | ENUM | CHECKING, SAVINGS |
+| account_type | ENUM | DEBIT, CREDIT, SAVINGS |
 | balance | DECIMAL(19,4) | **Không dùng FLOAT** |
 | currency | VARCHAR | Mặc định: VND |
 | status | ENUM | ACTIVE, LOCKED, CLOSED |
