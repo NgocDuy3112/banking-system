@@ -1,4 +1,4 @@
-package com.smartbanking.backend.service;
+package com.smartbanking.backend.service.auth;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;

@@ -2,11 +2,11 @@ package com.smartbanking.backend.exception.auth;
 
 import java.util.UUID;
 
-public class CustomerProfileMissingException extends RuntimeException {
+public class UserDisabledException extends RuntimeException {
     private final UUID userId;
 
-    public CustomerProfileMissingException(UUID userId) {
-        super("Customer profile missing for userId: " + userId);
+    public UserDisabledException(UUID userId) {
+        super("User " + userId + " is disabled");
         this.userId = userId;
     }
 

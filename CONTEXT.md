@@ -21,7 +21,7 @@ End user dùng app banking để gửi tiền, chuyển khoản, mở tài kho�
 Lý do tách: sau này cần chia sẻ `User` (auth) với staff flow mà không lẫn KYC data.
 
 ### CustomerProfile
-Hồ sơ KYC gắn với đúng một User có `Role = CUSTOMER`. Mỗi CustomerProfile sở hữu 0..N Account. Hiện không có cách nào để một CustomerProfile vô chủ (`user = null`).
+Hồ sơ KYC gắn với đúng một User có `Role = CUSTOMER`. Mỗi CustomerProfile sở hữu 0..N Account. MVP hiện enforce 0..1 (mỗi customer tối đa một tài khoản cá nhân chính theo quy định hiện hành tại Việt Nam) — phase sau mở rộng thành 1..N khi cho phép tài khoản phụ (savings, credit). Hiện không có cách nào để một CustomerProfile vô chủ (`user = null`).
 
 ### StaffProfile
 Hồ sơ nhân viên ngân hàng (Teller, Auditor, Admin). Cấu trúc và quan hệ với `User` **chưa được chốt** — xem [open questions](#open-questions).

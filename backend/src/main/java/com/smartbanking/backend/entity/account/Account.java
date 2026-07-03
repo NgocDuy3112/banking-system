@@ -1,7 +1,11 @@
 package com.smartbanking.backend.entity.account;
 
+import com.smartbanking.backend.entity.profile.CustomerProfile;
+import com.smartbanking.backend.exception.account.*;
+
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Check;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -9,11 +13,9 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Objects;
 
-import com.smartbanking.backend.entity.profile.CustomerProfile;
-import com.smartbanking.backend.exception.account.*;
-
 @Entity
 @Table(name="accounts")
+@Check(constraints="balance >= 0")
 @Getter
 @NoArgsConstructor(access=AccessLevel.PROTECTED)
 @EqualsAndHashCode(of="accountNumber")
@@ -44,8 +46,7 @@ public class Account {
     @Column(
             nullable=false,
             precision=24,
-            scale=4,
-            check=@CheckConstraint(constraint = "balance >= 0")
+            scale=4
     )
     private BigDecimal balance;
 

@@ -26,17 +26,17 @@ public class CustomerProfile {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
-            name = "user_id",
-            nullable = false,
-            unique = true,
-            foreignKey = @ForeignKey(name = "fk_customer_profiles_users_id")
+        name = "user_id",
+        nullable = false,
+        unique = true,
+        foreignKey = @ForeignKey(name = "fk_customer_profiles_users_id")
     )
     private User user;
 
     @OneToMany(
-            mappedBy = "customerProfile",
-            cascade = { CascadeType.PERSIST, CascadeType.MERGE },
-            fetch = FetchType.LAZY
+        mappedBy = "customerProfile",
+        cascade = { CascadeType.PERSIST, CascadeType.MERGE },
+        fetch = FetchType.LAZY
     )
     private List<Account> accounts = new ArrayList<>();
 
@@ -77,10 +77,10 @@ public class CustomerProfile {
     }
 
     public CustomerProfile(
-            User user,
-            String fullName,
-            String citizenId,
-            LocalDate dateOfBirth
+        User user,
+        String fullName,
+        String citizenId,
+        LocalDate dateOfBirth
     ) {
         this.id = UuidCreator.getTimeOrderedEpoch();
         this.user = Objects.requireNonNull(user, "user must not be null");

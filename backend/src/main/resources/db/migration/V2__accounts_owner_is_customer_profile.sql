@@ -12,8 +12,8 @@ ALTER TABLE accounts
         FOREIGN KEY (customer_profile_id) REFERENCES customer_profiles(id);
 
 ALTER TABLE accounts
-    DROP COLUMN user_id,
-    DROP CONSTRAINT fk_accounts_user_id;
+    DROP CONSTRAINT fk_accounts_user_id,
+    DROP COLUMN user_id;
 
 DROP INDEX IF EXISTS idx_accounts_user_id;
 

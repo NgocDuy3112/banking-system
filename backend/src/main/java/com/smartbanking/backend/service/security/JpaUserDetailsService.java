@@ -1,4 +1,4 @@
-package com.smartbanking.backend.service;
+package com.smartbanking.backend.service.security;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.smartbanking.backend.entity.user.User;
 import com.smartbanking.backend.entity.user.UserStatus;
-import com.smartbanking.backend.repository.UserRepository;
+import com.smartbanking.backend.repository.auth.UserRepository;
 
 import java.util.List;
 

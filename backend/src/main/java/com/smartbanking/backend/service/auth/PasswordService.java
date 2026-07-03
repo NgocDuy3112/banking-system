@@ -1,4 +1,4 @@
-package com.smartbanking.backend.service;
+package com.smartbanking.backend.service.auth;
 
 import com.smartbanking.backend.entity.user.User;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -30,4 +30,4 @@ app:
     ttl: PT30M
     issuer: smartbanking
   refresh:
-    ttl: PT7D
+    ttl: P7D

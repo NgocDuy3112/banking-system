@@ -6,8 +6,8 @@ CREATE TABLE users (
     role            VARCHAR(16)  NOT NULL,
     status          VARCHAR(16)  NOT NULL,
     version         BIGINT       NOT NULL DEFAULT 0,
-    created_at      TIMESTAMP    NOT NULL,
-    updated_at      TIMESTAMP    NOT NULL
+    created_at      TIMESTAMPTZ    NOT NULL,
+    updated_at      TIMESTAMPTZ    NOT NULL
 );
 
 CREATE TABLE customer_profiles (
@@ -18,8 +18,8 @@ CREATE TABLE customer_profiles (
     date_of_birth DATE,
     kyc_status    VARCHAR(16)  NOT NULL,
     version       BIGINT       NOT NULL DEFAULT 0,
-    created_at    TIMESTAMPZ    NOT NULL,
-    updated_at    TIMESTAMPZ    NOT NULL,
+    created_at    TIMESTAMPTZ    NOT NULL,
+    updated_at    TIMESTAMPTZ    NOT NULL,
 
     CONSTRAINT fk_customer_profiles_users_id
         FOREIGN KEY (user_id) REFERENCES users(id)
@@ -33,8 +33,8 @@ CREATE TABLE accounts (
     account_status VARCHAR(16)   NOT NULL,
     account_type   VARCHAR(16)   NOT NULL,
     version        BIGINT        NOT NULL DEFAULT 0,
-    created_at     TIMESTAMPZ     NOT NULL,
-    updated_at     TIMESTAMPZ     NOT NULL,
+    created_at     TIMESTAMPTZ     NOT NULL,
+    updated_at     TIMESTAMPTZ     NOT NULL,
 
     CONSTRAINT pk_accounts PRIMARY KEY (account_number),
     CONSTRAINT fk_accounts_user_id

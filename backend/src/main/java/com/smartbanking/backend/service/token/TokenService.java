@@ -1,4 +1,4 @@
-package com.smartbanking.backend.service;
+package com.smartbanking.backend.service.token;
 
 import com.smartbanking.backend.config.AppAuthProperties;
 import com.smartbanking.backend.entity.user.*;
@@ -24,9 +24,9 @@ public class TokenService {
 
     public record IssuedAccessToken(String token, Instant expiresAt) {}
 
-    public record AuthenticatedToken(UUID userId, Role role, String email) {}
-
     public record IssuedRefreshToken(String token, String hash) {}
+
+    public record AuthenticatedToken(UUID userId, Role role, String email) {}
 
     public TokenService(AppAuthProperties props) {
         this.props = Objects.requireNonNull(props, "props must not be null");
@@ -39,7 +39,7 @@ public class TokenService {
         Objects.requireNonNull(user.getId(), "user.id must not be null");
         Duration ttl = props.jwt().ttl();
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(props.jwt().ttl());
+        Instant expiresAt = now.plus(ttl);
         String token = Jwts.builder()
                 .issuer(props.jwt().issuer())
                 .subject(user.getId().toString())
@@ -66,7 +66,7 @@ public class TokenService {
             String email = claims.get("email", String.class);
             return new AuthenticatedToken(userId, role, email);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new InvalidTokenException(e.getMessage(), e);
+            throw new InvalidTokenException(e.getMessage());
         }
     }
 

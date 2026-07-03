@@ -2,6 +2,7 @@ package com.smartbanking.backend.exception.account;
 
 import java.math.BigDecimal;
 
+
 public class InsufficientFundsException extends RuntimeException {
     private final String accountNumber;
     private final BigDecimal balance;
