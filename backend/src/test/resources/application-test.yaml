@@ -1,0 +1,16 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  app:
+    jwt:
+      secret: test-secret-key-must-be-long-enough-for-hs256-256-bits-min
+      ttl: PT30M
+      issuer: smartbanking-test
+    refresh:
+      ttl: PT7D
