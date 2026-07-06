@@ -6,11 +6,29 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      timeout: 2s
 
 app:
   jwt:
-    secret: test-secret-key-must-be-long-enough-for-hs256-256-bits-min
+    secret: ${JWT_SECRET}
     ttl: PT30M
     issuer: smartbanking-test
   refresh:
     ttl: P7D
+  minio:
+    provider: S3_COMPATIBLE
+    region: ${MINIO_REGION}
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_BUCKET}
+    presigned-url-ttl: PT15M

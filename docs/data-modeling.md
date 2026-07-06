@@ -37,18 +37,19 @@ Chứa thông tin authentication. Tất cả roles đều có.
 ### 2. CustomerProfile
 Chứa thông tin KYC. **Chỉ Customer mới có.**
 
-| Field | Type | Ghi chú |
-|---|---|---|
-| id | UUID | Primary key |
-| user_id | UUID | FK → User |
-| full_name | VARCHAR | |
-| cccd_number | VARCHAR | **Encrypted** |
-| cccd_front_image_url | VARCHAR | |
-| cccd_back_image_url | VARCHAR | |
-| selfie_image_url | VARCHAR | |
-| date_of_birth | DATE | |
-| address | TEXT | |
-| kyc_status | ENUM | PENDING, APPROVED, REJECTED |
+| Field | Type | Ghi chú                                                               |                                                
+   |---|---|-----------------------------------------------------------------------|                                                             
+| id | UUID | Primary key                                                           |                                               
+| user_id | UUID | FK → User                                                             |                                            
+| full_name | VARCHAR |                                                                       |                                                 
+| citizen_id | VARCHAR(12) | UNIQUE, **chưa mã hoá** (xem open question                            
+ trong ADR) |
+| cccd_front_image_key | VARCHAR(512) | MinIO object key (kyc-assets/{customerProfileId}/cccd-front/{uuid}.{ext}) |
+| cccd_back_image_key | VARCHAR(512) | MinIO object key (kyc-assets/{customerProfileId}/cccd-back/{uuid}.{ext}) |
+| selfie_image_key | VARCHAR(512) | MinIO object key (kyc-assets/{customerProfileId}/selfie/{uuid}.{ext}) |
+| date_of_birth | DATE |                                                                       |                                                
+| address | TEXT | Set khi submit eKYC, nullable (chưa có KYC)                           |          
+| kyc_status | ENUM | PENDING, APPROVED, REJECTED                                           | 
 
 ---
 

@@ -4,21 +4,21 @@ services:
   postgres:
     image: docker.io/library/postgres:16-alpine
     container_name: smartbanking-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
     env_file: ./configs/.env
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d smartbanking"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
-  
+    profiles:
+      - development
+      - staging
+      - production
+
   redis:
     image: docker.io/library/redis:7-alpine
     container_name: smartbanking-redis
@@ -33,6 +33,35 @@ services:
       retries: 10
     volumes:
       - ./data/redis:/data
+    profiles:
+      - development
+      - staging
+      - production
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: smartbanking-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_ALIAS: ${MINIO_ALIAS}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./data/minio:/data
+    env_file: ./configs/.env
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    profiles:
+      - development
+      - staging
 
   backend:
     build: ./backend
@@ -43,15 +72,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      minio:
+        condition: service_healthy
+    env_file: ./configs/.env
     ports:
       - "8080:8080"
-    env_file: ./configs/.env
+    profiles:
+      - development
+      - staging
+      - production
 
-  
+
 networks:
   default:
     name: smartbanking-dev-net

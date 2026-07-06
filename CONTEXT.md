@@ -23,6 +23,15 @@ Lý do tách: sau này cần chia sẻ `User` (auth) với staff flow mà không
 ### CustomerProfile
 Hồ sơ KYC gắn với đúng một User có `Role = CUSTOMER`. Mỗi CustomerProfile sở hữu 0..N Account. MVP hiện enforce 0..1 (mỗi customer tối đa một tài khoản cá nhân chính theo quy định hiện hành tại Việt Nam) — phase sau mở rộng thành 1..N khi cho phép tài khoản phụ (savings, credit). Hiện không có cách nào để một CustomerProfile vô chủ (`user = null`).
 
+CustomerProfile có 4 KYC asset (CCCD mặt trước, mặt sau, selfie, address) — xem `KYCAsset`. KYC asset là **gate** để CustomerProfile được phép mở Account thật, không phải hành động mở account. Xem [eKYC Submission](#ekyc-submission).
+
+### KYCAsset
+Một file ảnh hoặc text đính kèm CustomerProfile để phục vụ eKYC: CCCD mặt trước, CCCD mặt sau, selfie, và **địa chỉ thường trú** (text — lấy từ dòng "Nơi thường trú" trên CCCD mặt trước). Mỗi CustomerProfile có tối đa một asset cho mỗi slot. Lưu trên object storage (MinIO local, S3 production) — server giữ URL/key trong Postgres, không lưu bytes. Lifecycle: tạo khi submit eKYC, có thể bị thay thế khi resubmit; chưa có retention/cleanup policy trong MVP.
+
+### eKYC Submission
+Hành động Customer upload đầy đủ 4 KYC asset lần đầu (hoặc resubmit khi sai). Trong MVP, hành động này tự động chuyển `KYCStatus` từ `PENDING` → `APPROVED` (không có bước staff duyệt — staff flow thuộc phase sau). Endpoint `PUT /api/v1/customers/me/ekyc`, idempotent (resubmit = thay asset cũ). Sau khi submit thành công, Customer có thể gọi endpoint mở Account (phase sau).
+_Avoid_: staff-driven manual approval, draft/lưu-dở, content validation (face match, OCR, liveness) — không nằm trong MVP.
+
 ### StaffProfile
 Hồ sơ nhân viên ngân hàng (Teller, Auditor, Admin). Cấu trúc và quan hệ với `User` **chưa được chốt** — xem [open questions](#open-questions).
 
@@ -80,6 +89,7 @@ Các câu còn vướng trong domain, cần chốt trước khi viết feature:
 
 - **StaffProfile layout**: cấu trúc quan hệ `User ↔ StaffProfile` chưa quyết. Cần chốt khi implement staff onboarding.
 - **Card ↔ Account**: docs đề cập Card entity, code chưa có. Cần chốt khi viết Card module.
+- **Object storage backend**: MinIO trong dev, S3 production — chưa chốt cụ thể bucket name convention, lifecycle policy, presigned URL TTL.
 
 ---
 

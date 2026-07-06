@@ -3,7 +3,6 @@ package com.smartbanking.backend;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
-
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -12,8 +11,8 @@ import org.testcontainers.utility.DockerImageName;
 
 
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @ActiveProfiles("test")
+@Testcontainers
 public class IntegrationTestBase {
     @Container
     @ServiceConnection

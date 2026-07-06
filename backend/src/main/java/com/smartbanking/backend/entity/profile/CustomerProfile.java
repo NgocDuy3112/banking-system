@@ -49,6 +49,18 @@ public class CustomerProfile {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @Column(name = "cccd_front_image_key", length = 512)
+    private String cccdFrontImageKey;
+
+    @Column(name = "cccd_back_image_key", length = 512)
+    private String cccdBackImageKey;
+
+    @Column(name = "selfie_image_key", length = 512)
+    private String selfieImageKey;
+
+    @Column(name = "address", length = 512)
+    private String address;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "kyc_status", nullable = false, length = 16)
     private KYCStatus kycStatus;
@@ -114,14 +126,16 @@ public class CustomerProfile {
         }
     }
 
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        if (dateOfBirth != null) {
-            LocalDate minDate = LocalDate.now().minusYears(150);
-            if (dateOfBirth.isAfter(LocalDate.now()) || dateOfBirth.isBefore(minDate)) {
-                throw new IllegalArgumentException(
-                        "dateOfBirth is implausible: " + dateOfBirth);
-            }
-        }
-        this.dateOfBirth = dateOfBirth;
+    public void submitEkyc(
+            String cccdFrontImageKey,
+            String cccdBackImageKey,
+            String selfieImageKey,
+            String address
+    ) {
+        this.cccdFrontImageKey = Objects.requireNonNull(cccdFrontImageKey, "cccdFrontKey must not be null");
+        this.cccdBackImageKey = Objects.requireNonNull(cccdBackImageKey, "cccdBackKey must not be null");
+        this.selfieImageKey = Objects.requireNonNull(selfieImageKey, "selfieKey must not be null");
+        this.address = Objects.requireNonNull(address, "address must not be null");
+        this.kycStatus = KYCStatus.APPROVED;
     }
 }

@@ -3,10 +3,13 @@ package com.smartbanking.backend.exception;
 import com.smartbanking.backend.exception.account.*;
 import com.smartbanking.backend.exception.auth.*;
 
+import com.smartbanking.backend.exception.kyc.EkycUploadException;
+import com.smartbanking.backend.exception.kyc.InvalidEkycAssetException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -28,6 +31,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiError.of("INTERNAL_ERROR", "An unexpected error occurred"));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request body");
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of("VALIDATION_FAILED", message));
     }
 
     @ExceptionHandler(AccountNotFoundException.class)
@@ -98,5 +112,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiError.of("CUSTOMER_PROFILE_MISSING", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EkycUploadException.class)
+    public ResponseEntity<ApiError> handleEkycUpload(EkycUploadException ex) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiError.of("EKYC_UPLOAD", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidEkycAssetException.class)
+    public ResponseEntity<ApiError> handleInvalidEkycAsset(InvalidEkycAssetException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of("INVALID_EKYC_ASSET", ex.getMessage()));
     }
 }

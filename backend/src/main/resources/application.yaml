@@ -2,9 +2,9 @@ spring:
   application:
     name: backend
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -14,15 +14,13 @@ spring:
     locations: classpath:db/migration
   data:
     redis:
-      host: ${REDIS_HOST:redis}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
       timeout: 2s
-
 
 server:
   port: 8080
-
 
 app:
   jwt:
@@ -31,3 +29,11 @@ app:
     issuer: smartbanking
   refresh:
     ttl: P7D
+  minio:
+    provider: S3_COMPATIBLE
+    region: ${MINIO_REGION}
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_BUCKET}
+    presigned-url-ttl: PT15M

@@ -80,6 +80,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/v1/accounts/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/customers/me/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(eh -> eh
