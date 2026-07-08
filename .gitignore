@@ -1,6 +1,8 @@
 CLAUDE.md
 data/
 configs/
+.env
+.DS_Store
 
 .gradle
 **/build/
