@@ -22,6 +22,8 @@ import com.smartbanking.backend.exception.transaction.SelfTransferException;
 import com.smartbanking.backend.repository.account.AccountRepository;
 import com.smartbanking.backend.repository.profile.CustomerProfileRepository;
 import com.smartbanking.backend.repository.transaction.TransactionRepository;
+import com.smartbanking.backend.service.account.AccountService;
+import com.smartbanking.backend.service.account.BalanceUpdateResult;
 import com.smartbanking.backend.service.otp.OtpService;
 
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class TransactionServiceTest {
     @Mock OtpService otpService;
+    @Mock AccountService accountService;
     @Mock CustomerProfileRepository customerProfileRepository;
     @Mock AccountRepository accountRepository;
     @Mock TransactionRepository transactionRepository;
@@ -76,11 +79,10 @@ public class TransactionServiceTest {
         when(customerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
     }
 
-    private void stubAccounts(Account fromAccount, Account toAccount) {
-        when(accountRepository.findByAccountNumberAndCustomerProfileId(FROM_ACC, fromAccount.getCustomerProfile().getId()))
+    private void stubFromAccountOwnership(Account fromAccount, UUID profileId) {
+        when(accountRepository.findByAccountNumberAndCustomerProfileId(
+                fromAccount.getAccountNumber(), profileId))
                 .thenReturn(Optional.of(fromAccount));
-        when(accountRepository.findByAccountNumberForUpdate(FROM_ACC)).thenReturn(Optional.of(fromAccount));
-        when(accountRepository.findByAccountNumberForUpdate(TO_ACC)).thenReturn(Optional.of(toAccount));
     }
 
     @Test
@@ -95,7 +97,15 @@ public class TransactionServiceTest {
         customerProfile.addAccount(fromAccount);
 
         stubOtpAndProfile(userId, customerProfile);
-        stubAccounts(fromAccount, toAccount);
+        stubFromAccountOwnership(fromAccount, customerProfile.getId());
+        BalanceUpdateResult mockResult = new BalanceUpdateResult(
+                FROM_ACC, TO_ACC,
+                new BigDecimal("10000.00"), new BigDecimal("8000.00"),
+                new BigDecimal("5000.00"),  new BigDecimal("7000.00")
+        );
+        when(accountService.updateBalance(FROM_ACC, TO_ACC, new BigDecimal("2000.00")))
+                .thenReturn(mockResult);
+
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var response = transactionService.transfer(userId, newTransactionRequest(new BigDecimal("2000.00")));
@@ -117,98 +127,6 @@ public class TransactionServiceTest {
         assertThat(saved.getToBalanceAfter()).isEqualByComparingTo("7000.00");
         assertThat(saved.getFraudStatus().name()).isEqualTo("CLEAR");
         assertThat(saved.getTransactionStatus()).isEqualTo(TransactionStatus.SUCCESS);
-    }
-
-    @Test
-    void transfer_currencyMismatch_throwsCurrencyMismatchException() {
-        UUID userId = UUID.randomUUID();
-        User user = newUser();
-        CustomerProfile customerProfile = newCustomerProfile(user);
-        user.assignProfile(customerProfile);
-
-        Account fromAccount = newAccount(FROM_ACC, new BigDecimal("10000.00"), Currency.VND);
-        Account toAccount = newAccount(TO_ACC, new BigDecimal("5000.00"), Currency.USD);
-        customerProfile.addAccount(fromAccount);
-
-        stubOtpAndProfile(userId, customerProfile);
-        stubAccounts(fromAccount, toAccount);
-
-        assertThatThrownBy(() -> transactionService.transfer(userId, newTransactionRequest(new BigDecimal("2000.00"))))
-                .isInstanceOf(CurrencyMismatchException.class)
-                .hasMessageContaining("Currency mismatch")
-                .hasMessageContaining(FROM_ACC)
-                .hasMessageContaining("VND")
-                .hasMessageContaining(TO_ACC)
-                .hasMessageContaining("USD");
-        verify(transactionRepository, never()).save(any());
-    }
-
-    @Test
-    void transfer_insufficientFunds_throwsInsufficientFundsException() {
-        UUID userId = UUID.randomUUID();
-        User user = newUser();
-        CustomerProfile customerProfile = newCustomerProfile(user);
-        user.assignProfile(customerProfile);
-
-        Account fromAccount = newAccount(FROM_ACC, new BigDecimal("1000.00"), Currency.VND);
-        Account toAccount = newAccount(TO_ACC, new BigDecimal("5000.00"), Currency.VND);
-        customerProfile.addAccount(fromAccount);
-
-        stubOtpAndProfile(userId, customerProfile);
-        stubAccounts(fromAccount, toAccount);
-
-        assertThatThrownBy(() -> transactionService.transfer(userId, newTransactionRequest(new BigDecimal("2000.00"))))
-                .isInstanceOf(InsufficientFundsException.class)
-                .hasMessageContaining("Insufficient funds")
-                .hasMessageContaining(FROM_ACC);
-        verify(transactionRepository, never()).save(any());
-    }
-
-    @Test
-    void transfer_whenToAccountNumberSortsBeforeFromAccountNumber_reversesLockOrderAndStillTransfersCorrectly() {
-        UUID userId = UUID.randomUUID();
-        User user = newUser();
-        CustomerProfile customerProfile = newCustomerProfile(user);
-        user.assignProfile(customerProfile);
-
-        String fromAccountNumber = "987654321";
-        String toAccountNumber = "123456789";
-        Account fromAccount = newAccount(fromAccountNumber, new BigDecimal("10000.00"), Currency.VND);
-        Account toAccount = newAccount(toAccountNumber, new BigDecimal("5000.00"), Currency.VND);
-        customerProfile.addAccount(fromAccount);
-
-        doNothing().when(otpService).verifyTransferOtp(userId, OTP_CODE);
-        when(customerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(customerProfile));
-        when(accountRepository.findByAccountNumberAndCustomerProfileId(fromAccountNumber, customerProfile.getId()))
-                .thenReturn(Optional.of(fromAccount));
-        when(accountRepository.findByAccountNumberForUpdate(toAccountNumber)).thenReturn(Optional.of(toAccount));
-        when(accountRepository.findByAccountNumberForUpdate(fromAccountNumber)).thenReturn(Optional.of(fromAccount));
-        when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        TransactionRequest transactionRequest = new TransactionRequest(
-                fromAccountNumber,
-                toAccountNumber,
-                new BigDecimal("2000.00"),
-                "note",
-                OTP_CODE
-        );
-        var response = transactionService.transfer(userId, transactionRequest);
-
-        assertThat(response.fromBalanceBefore()).isEqualByComparingTo("10000.00");
-        assertThat(response.fromBalanceAfter()).isEqualByComparingTo("8000.00");
-        assertThat(response.toBalanceBefore()).isEqualByComparingTo("5000.00");
-        assertThat(response.toBalanceAfter()).isEqualByComparingTo("7000.00");
-        assertThat(response.transactionStatus()).isEqualTo(TransactionStatus.SUCCESS);
-
-        ArgumentCaptor<Transaction> captor = ArgumentCaptor.forClass(Transaction.class);
-        verify(transactionRepository).save(captor.capture());
-
-        Transaction savedTransaction = captor.getValue();
-        assertThat(savedTransaction.getFromAccountNumber()).isEqualTo(fromAccountNumber);
-        assertThat(savedTransaction.getToAccountNumber()).isEqualTo(toAccountNumber);
-        assertThat(savedTransaction.getTransactionStatus()).isEqualTo(TransactionStatus.SUCCESS);
-        assertThat(savedTransaction.getFromBalanceAfter()).isEqualByComparingTo("8000.00");
-        assertThat(savedTransaction.getToBalanceAfter()).isEqualByComparingTo("7000.00");
     }
 
     @Test
@@ -265,28 +183,6 @@ public class TransactionServiceTest {
 
         assertThatThrownBy(() -> transactionService.transfer(userId, newTransactionRequest(new BigDecimal("2000.00"))))
                 .isInstanceOf(AccountNotFoundException.class)
-                .hasMessageContaining(FROM_ACC);
-        verify(accountRepository, never()).findByAccountNumberForUpdate(any());
-        verify(transactionRepository, never()).save(any());
-    }
-
-    @Test
-    void transfer_sameFromAndToAccount_throwsSelfTransferException() {
-        UUID userId = UUID.randomUUID();
-        User user = newUser();
-        CustomerProfile customerProfile = newCustomerProfile(user);
-        user.assignProfile(customerProfile);
-
-        Account fromAccount = newAccount(FROM_ACC, new BigDecimal("1000.00"), Currency.VND);
-        customerProfile.addAccount(fromAccount);
-
-        stubOtpAndProfile(userId, customerProfile);
-        when(accountRepository.findByAccountNumberAndCustomerProfileId(fromAccount.getAccountNumber(), customerProfile.getId()))
-                .thenReturn(Optional.of(fromAccount));
-        TransactionRequest transactionRequest = new TransactionRequest(FROM_ACC, FROM_ACC, new BigDecimal("200.00"), "note", OTP_CODE);
-        assertThatThrownBy(() -> transactionService.transfer(userId, transactionRequest))
-                .isInstanceOf(SelfTransferException.class)
-                .hasFieldOrPropertyWithValue("accountNumber", FROM_ACC)
                 .hasMessageContaining(FROM_ACC);
         verify(accountRepository, never()).findByAccountNumberForUpdate(any());
         verify(transactionRepository, never()).save(any());

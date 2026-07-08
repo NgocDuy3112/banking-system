@@ -10,8 +10,8 @@ import java.util.UUID;
 public record TransactionResponse(
         UUID transactionId,
         String referenceNumber,
-        TransactionStatus transactionStatus,
         TransactionType transactionType,
+        TransactionStatus transactionStatus,
         BigDecimal fromBalanceBefore,
         BigDecimal fromBalanceAfter,
         BigDecimal toBalanceBefore,
