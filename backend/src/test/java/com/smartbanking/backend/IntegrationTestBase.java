@@ -15,8 +15,10 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 public class IntegrationTestBase {
     @Container
-    @ServiceConnection
-    protected static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
+    @ServiceConnection(name = "postgresql")
+    protected static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
+            .withExposedPorts(5432)
+            .withReuse(true);
 
     @Container
     @ServiceConnection(name = "redis")

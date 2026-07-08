@@ -5,6 +5,11 @@ import com.smartbanking.backend.exception.auth.*;
 
 import com.smartbanking.backend.exception.kyc.EkycUploadException;
 import com.smartbanking.backend.exception.kyc.InvalidEkycAssetException;
+import com.smartbanking.backend.exception.otp.OtpExpiredException;
+import com.smartbanking.backend.exception.otp.OtpInvalidException;
+import com.smartbanking.backend.exception.transaction.CurrencyMismatchException;
+import com.smartbanking.backend.exception.transaction.SelfTransferException;
+import com.smartbanking.backend.exception.transaction.TransactionNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -126,5 +131,40 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of("INVALID_EKYC_ASSET", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SelfTransferException.class)
+    public ResponseEntity<ApiError> handleSelfTransfer(SelfTransferException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of("SELF_TRANSFER", ex.getMessage()));
+    }
+
+    @ExceptionHandler(CurrencyMismatchException.class)
+    public ResponseEntity<ApiError> handleCurrencyMismatch(CurrencyMismatchException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_CONTENT)
+                .body(ApiError.of("CURRENCY_MISMATCH", ex.getMessage()));
+    }
+
+    @ExceptionHandler(OtpExpiredException.class)
+    public ResponseEntity<ApiError> handleOtpExpired(OtpExpiredException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of("OTP_EXPIRED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(OtpInvalidException.class)
+    public ResponseEntity<ApiError> handleOtpInvalid(OtpInvalidException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of("OTP_INVALID", ex.getMessage()));
+    }
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    public ResponseEntity<ApiError> handleTransactionNotFound(TransactionNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiError.of("TRANSACTION_NOT_FOUND", ex.getMessage()));
     }
 }

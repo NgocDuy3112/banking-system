@@ -22,6 +22,7 @@ import org.springframework.web.client.RestClient;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +47,10 @@ public class AuthControllerIntegrationTest extends IntegrationTestBase {
     void setUp() {
         customerProfileRepository.deleteAll();
         userRepository.deleteAll();
-        redis.delete(redis.keys("refresh:*"));
+        Set<String> keys = redis.keys("refresh:*");
+        if (keys != null && !keys.isEmpty()) {
+            redis.delete(keys);
+        }
         restClient = RestClient.create("http://localhost:" + port);
     }
 
@@ -141,7 +145,7 @@ public class AuthControllerIntegrationTest extends IntegrationTestBase {
         AuthResponse refreshAuthResponse = refreshAuth.getBody();
         assertThat(statusRefresh).isEqualTo(HttpStatus.OK);
         assertThat(refreshAuthResponse).isNotNull();
-        assertThat(refreshAuthResponse.accessToken()).isNotSameAs(authResponse.accessToken());
+        assertThat(refreshAuthResponse.accessToken()).isNotEqualTo(authResponse.accessToken());
     }
 
     @Test

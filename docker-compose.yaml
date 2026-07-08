@@ -63,6 +63,16 @@ services:
       - development
       - staging
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: smartbanking-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    profiles:
+      - development
+      - staging
+
   backend:
     build: ./backend
     image: smartbanking-backend:dev

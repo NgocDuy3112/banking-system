@@ -11,5 +11,5 @@ import com.smartbanking.backend.entity.profile.CustomerProfile;
 @Repository
 public interface CustomerProfileRepository extends JpaRepository<CustomerProfile, UUID> {
     Optional<CustomerProfile> findByCitizenId(String citizenId);
-    Optional<CustomerProfile> findByUserId(String userId);
+    Optional<CustomerProfile> findByUserId(UUID userId);
 }
