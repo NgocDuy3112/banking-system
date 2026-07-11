@@ -53,6 +53,7 @@ dependencies {
     testImplementation "org.springframework.boot:spring-boot-starter-restclient"
     testImplementation "org.testcontainers:testcontainers-junit-jupiter"
     testImplementation "org.testcontainers:testcontainers-postgresql"
+    testImplementation "org.testcontainers:testcontainers-minio"
 }
 
 tasks.named('test') {

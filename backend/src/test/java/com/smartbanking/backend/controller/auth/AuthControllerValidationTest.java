@@ -16,6 +16,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import com.smartbanking.backend.repository.auth.UserRepository;
 import com.smartbanking.backend.repository.profile.CustomerProfileRepository;
+import com.smartbanking.backend.repository.account.AccountRepository;
 
 import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +26,7 @@ public class AuthControllerValidationTest extends IntegrationTestBase {
     @LocalServerPort int port;
     @Autowired UserRepository userRepository;
     @Autowired CustomerProfileRepository customerProfileRepository;
+    @Autowired AccountRepository accountRepository;
     @Autowired StringRedisTemplate redis;
 
     RestClient restClient;
@@ -38,6 +40,7 @@ public class AuthControllerValidationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
+        accountRepository.deleteAll();
         customerProfileRepository.deleteAll();
         userRepository.deleteAll();
         redis.delete(redis.keys("refresh:*"));

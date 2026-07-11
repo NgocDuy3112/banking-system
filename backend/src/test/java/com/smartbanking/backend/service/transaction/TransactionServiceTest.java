@@ -2,7 +2,6 @@ package com.smartbanking.backend.service.transaction;
 
 import com.smartbanking.backend.dto.transaction.TransactionRequest;
 import com.smartbanking.backend.entity.account.Account;
-import com.smartbanking.backend.entity.account.AccountStatus;
 import com.smartbanking.backend.entity.account.AccountType;
 import com.smartbanking.backend.entity.account.Currency;
 import com.smartbanking.backend.entity.profile.CustomerProfile;
@@ -11,14 +10,10 @@ import com.smartbanking.backend.entity.transaction.TransactionStatus;
 import com.smartbanking.backend.entity.transaction.TransactionType;
 import com.smartbanking.backend.entity.user.Role;
 import com.smartbanking.backend.entity.user.User;
-import com.smartbanking.backend.exception.account.AccountNotActiveException;
 import com.smartbanking.backend.exception.account.AccountNotFoundException;
-import com.smartbanking.backend.exception.account.InsufficientFundsException;
 import com.smartbanking.backend.exception.auth.CustomerProfileMissingException;
 import com.smartbanking.backend.exception.otp.OtpExpiredException;
 import com.smartbanking.backend.exception.otp.OtpInvalidException;
-import com.smartbanking.backend.exception.transaction.CurrencyMismatchException;
-import com.smartbanking.backend.exception.transaction.SelfTransferException;
 import com.smartbanking.backend.repository.account.AccountRepository;
 import com.smartbanking.backend.repository.profile.CustomerProfileRepository;
 import com.smartbanking.backend.repository.transaction.TransactionRepository;
@@ -80,8 +75,8 @@ public class TransactionServiceTest {
     }
 
     private void stubFromAccountOwnership(Account fromAccount, UUID profileId) {
-        when(accountRepository.findByAccountNumberAndCustomerProfileId(
-                fromAccount.getAccountNumber(), profileId))
+        when(accountRepository.findByCustomerProfileIdAndAccountNumber(
+                profileId, fromAccount.getAccountNumber()))
                 .thenReturn(Optional.of(fromAccount));
     }
 
@@ -140,7 +135,7 @@ public class TransactionServiceTest {
                 .isSameAs(otpInvalidException);
 
         verify(customerProfileRepository, never()).findByUserId(any());
-        verify(accountRepository, never()).findByAccountNumberAndCustomerProfileId(any(), any());
+        verify(accountRepository, never()).findByCustomerProfileIdAndAccountNumber(any(), any());
         verify(transactionRepository, never()).save(any());
     }
 
@@ -154,7 +149,7 @@ public class TransactionServiceTest {
                 .isInstanceOf(OtpExpiredException.class)
                 .isSameAs(otpExpiredException);
         verify(customerProfileRepository, never()).findByUserId(any());
-        verify(accountRepository, never()).findByAccountNumberAndCustomerProfileId(any(), any());
+        verify(accountRepository, never()).findByCustomerProfileIdAndAccountNumber(any(), any());
         verify(transactionRepository, never()).save(any());
     }
 
@@ -166,7 +161,7 @@ public class TransactionServiceTest {
         assertThatThrownBy(() -> transactionService.transfer(userId, newTransactionRequest(new BigDecimal("2000.00"))))
                 .isInstanceOf(CustomerProfileMissingException.class)
                 .hasMessageContaining(userId.toString());
-        verify(accountRepository, never()).findByAccountNumberAndCustomerProfileId(any(), any());
+        verify(accountRepository, never()).findByCustomerProfileIdAndAccountNumber(any(), any());
         verify(transactionRepository, never()).save(any());
     }
 
@@ -178,7 +173,7 @@ public class TransactionServiceTest {
         user.assignProfile(customerProfile);
 
         stubOtpAndProfile(userId, customerProfile);
-        when(accountRepository.findByAccountNumberAndCustomerProfileId(FROM_ACC, customerProfile.getId()))
+        when(accountRepository.findByCustomerProfileIdAndAccountNumber(customerProfile.getId(), FROM_ACC))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> transactionService.transfer(userId, newTransactionRequest(new BigDecimal("2000.00"))))

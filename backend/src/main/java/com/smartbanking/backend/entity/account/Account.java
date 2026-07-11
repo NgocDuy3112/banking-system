@@ -152,4 +152,34 @@ public class Account {
         }
         this.balance = newBalance;
     }
+
+    public void lock() {
+        switch (this.accountStatus) {
+            case ACTIVE -> this.accountStatus = AccountStatus.LOCKED;
+            case LOCKED -> throw new AccountAlreadyLockedException(this.accountNumber, this.accountStatus);
+            case CLOSED -> throw new AccountClosedException(this.accountNumber, this.accountStatus);
+        }
+    }
+
+    public void unlock() {
+        switch (this.accountStatus) {
+            case LOCKED -> this.accountStatus = AccountStatus.ACTIVE;
+            case ACTIVE -> throw new AccountAlreadyActiveException(this.accountNumber, this.accountStatus);
+            case CLOSED -> throw new AccountClosedException(this.accountNumber, this.accountStatus);
+        }
+    }
+
+    public void close() {
+        requireEmptyBalance();
+        switch (this.accountStatus) {
+            case ACTIVE, LOCKED -> this.accountStatus = AccountStatus.CLOSED;
+            case CLOSED -> throw new AccountClosedException(this.accountNumber, this.accountStatus);
+        }
+    }
+
+    private void requireEmptyBalance() {
+        if (this.balance.signum() != 0) {
+            throw new AccountNotEmptyException(this.accountNumber, this.balance);
+        }
+    }
 }

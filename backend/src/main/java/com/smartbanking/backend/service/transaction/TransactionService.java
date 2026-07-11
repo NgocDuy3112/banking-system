@@ -25,11 +25,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Stream;
 
 
 @Slf4j
@@ -49,8 +46,8 @@ public class TransactionService {
         otpService.verifyTransferOtp(userId, request.otpCode());
         CustomerProfile profile = customerProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomerProfileMissingException(userId));
-        accountRepository.findByAccountNumberAndCustomerProfileId(
-                request.fromAccountNumber(), profile.getId()
+        accountRepository.findByCustomerProfileIdAndAccountNumber(
+                profile.getId(), request.fromAccountNumber()
         ).orElseThrow(() -> new AccountNotFoundException(request.fromAccountNumber()));
 
         BalanceUpdateResult result = accountService.updateBalance(

@@ -2,6 +2,7 @@ package com.smartbanking.backend.entity.profile;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.smartbanking.backend.entity.account.Account;
+import com.smartbanking.backend.entity.kyc.KYCStatus;
 import com.smartbanking.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;

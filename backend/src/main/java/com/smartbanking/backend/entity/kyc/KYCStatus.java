@@ -1,4 +1,4 @@
-package com.smartbanking.backend.entity.profile;
+package com.smartbanking.backend.entity.kyc;
 
 public enum KYCStatus {
     PENDING,

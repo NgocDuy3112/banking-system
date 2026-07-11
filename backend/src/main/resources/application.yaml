@@ -38,6 +38,9 @@ app:
     secret: ${JWT_SECRET}
     ttl: PT30M
     issuer: smartbanking
+  otp:
+    ttl: ${OTP_TTL:PT5M}
+    max-attempts: ${OTP_MAX_ATTEMPTS:5}
   refresh:
     ttl: P7D
   minio:

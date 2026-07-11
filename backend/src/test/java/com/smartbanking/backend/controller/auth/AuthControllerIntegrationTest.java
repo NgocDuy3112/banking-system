@@ -5,6 +5,7 @@ import com.smartbanking.backend.config.AppAuthProperties;
 import com.smartbanking.backend.dto.auth.*;
 import com.smartbanking.backend.repository.auth.UserRepository;
 import com.smartbanking.backend.repository.profile.CustomerProfileRepository;
+import com.smartbanking.backend.repository.account.AccountRepository;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Assertions;
@@ -32,6 +33,7 @@ public class AuthControllerIntegrationTest extends IntegrationTestBase {
     @Autowired AppAuthProperties appAuthProperties;
     @Autowired UserRepository userRepository;
     @Autowired CustomerProfileRepository customerProfileRepository;
+    @Autowired AccountRepository accountRepository;
     @Autowired StringRedisTemplate redis;
 
     RestClient restClient;
@@ -45,6 +47,7 @@ public class AuthControllerIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
+        accountRepository.deleteAll();
         customerProfileRepository.deleteAll();
         userRepository.deleteAll();
         Set<String> keys = redis.keys("refresh:*");

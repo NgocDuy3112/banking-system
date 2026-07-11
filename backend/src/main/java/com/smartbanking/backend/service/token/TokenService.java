@@ -41,6 +41,7 @@ public class TokenService {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(ttl);
         String token = Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .issuer(props.jwt().issuer())
                 .subject(user.getId().toString())
                 .claim("role", user.getRole().name())

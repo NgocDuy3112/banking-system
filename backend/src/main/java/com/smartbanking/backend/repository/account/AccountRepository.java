@@ -17,7 +17,8 @@ import java.util.UUID;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, String> {
         List<Account> findByCustomerProfileId(UUID customerProfileId);
-        Optional<Account> findByAccountNumberAndCustomerProfileId(String accountNumber, UUID customerProfileId);
+        Optional<Account> findByCustomerProfileIdAndAccountNumber(UUID customerProfileId, String accountNumber);
+        boolean existsByCustomerProfileId(UUID customerProfileId);
 
         @Lock(LockModeType.PESSIMISTIC_WRITE)
         @Query("SELECT a FROM Account a WHERE a.accountNumber = :accountNumber")

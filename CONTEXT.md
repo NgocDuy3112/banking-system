@@ -52,14 +52,23 @@ Loại tài khoản. Giá trị: `DEBIT`, `CREDIT`, `SAVINGS`. Tương ứng v�
 
 ### AccountStatus
 Trạng thái vòng đời của Account. Giá trị: `ACTIVE`, `LOCKED`, `CLOSED`.
-- `LOCKED` — đóng băng, không cho credit/debit nhưng giữ số dư.
-- `CLOSED` — đã đóng, không giao dịch được nữa.
+- `LOCKED` — đóng băng, không cho credit/debit nhưng giữ số dư. GET endpoint vẫn trả về account với status=LOCKED. Customer tự khóa/mở bằng `PATCH /api/v1/accounts/{accountNumber}/{lock|unlock}`. Strict semantics: gọi lock trên account đã LOCKED → 409, không idempotent. Xem [docs/phases/0001-account-lock-unlock.md](docs/phases/0001-account-lock-unlock.md).
+- `CLOSED` — đã đóng, không giao dịch được nữa. Terminal state — không reopen trong MVP; lock/unlock trên CLOSED trả 409 `ACCOUNT_CLOSED`.
 
 ### Currency
 Loại tiền tệ của balance. Giá trị: `VND`, `USD`, `EUR`. MVP không giới hạn — schema cho phép thêm sau.
 
 ### KYCStatus
 Trạng thái eKYC của CustomerProfile. Giá trị: `PENDING`, `APPROVED`, `REJECTED`. Mặc định khi tạo là `PENDING`. Đây là gate để CustomerProfile được phép mở Account thật.
+
+### Account Opening
+Hành động Customer tự mở Account cá nhân chính sau khi đã submit eKYC.
+- Gate: `CustomerProfile.kycStatus` phải = `APPROVED`.
+- 1 customer tối đa 1 account cá nhân chính (MVP enforce `0..1`, phase sau mở rộng thành `1..N`).
+- Currency: server default `VND`, client có thể override (trong MVP scope).
+- Initial balance: 0, server tự set — không nhận từ client.
+- Idempotency: gọi lần 2 với customer đã có account → `409` + `Location` header trỏ về account hiện có.
+_Avoid_: nhận `initialBalance` từ client, cho phép multi-currency balance, tự tạo Account khi `Registration` (phase sau).
 
 ---
 

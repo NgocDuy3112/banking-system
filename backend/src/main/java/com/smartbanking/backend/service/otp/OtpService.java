@@ -4,6 +4,7 @@ import com.smartbanking.backend.entity.user.User;
 import com.smartbanking.backend.exception.auth.UserNotFoundException;
 import com.smartbanking.backend.exception.otp.OtpExpiredException;
 import com.smartbanking.backend.exception.otp.OtpInvalidException;
+import com.smartbanking.backend.exception.otp.OtpLockedException;
 import com.smartbanking.backend.repository.auth.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class OtpService {
     private static final String OTP_KEY_PREFIX = "otp:";
     private static final String OTP_KEY_SUFFIX = ":TRANSFER";
+    private static final String OTP_ATTEMPTS_SUFFIX = ":ATTEMPTS";
     private static final int OTP_CODE_LENGTH = 6;
 
     private final StringRedisTemplate redis;
@@ -32,6 +34,9 @@ public class OtpService {
 
     @Value("${app.otp.ttl:PT5M}")
     private Duration otpTtl;
+
+    @Value("${app.otp.max-attempts:5}")
+    private int maxAttempts;
 
     public int requestTransferOtp(UUID userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
@@ -48,17 +53,42 @@ public class OtpService {
 
     public void verifyTransferOtp(UUID userId, String otpCode) {
         String key = buildKey(userId);
+        String attemptsKey = buildAttemptsKey(userId);
+
+        String attemptsStr = redis.opsForValue().get(attemptsKey);
+        int attempts = attemptsStr != null ? Integer.parseInt(attemptsStr) : 0;
+        if (attempts >= maxAttempts) {
+            log.warn("OTP locked for user {} after {} failed attempts", userId, attempts);
+            throw new OtpLockedException(userId, maxAttempts);
+        }
+
         String storedHash = redis.opsForValue().get(key);
         if (storedHash == null) {
             log.warn("OTP code not found for user {}", userId);
             throw new OtpExpiredException(userId);
         }
+
         if (!passwordEncoder.matches(otpCode, storedHash)) {
-            log.warn("OTP code mismatch for user {}", userId);
+            Long newCount = redis.opsForValue().increment(attemptsKey);
+            if (newCount != null) {
+                redis.expire(attemptsKey, otpTtl);
+            }
+            if (newCount != null && newCount >= maxAttempts) {
+                redis.delete(key);
+                log.warn("OTP locked for user {} after {} failed attempts", userId, newCount);
+                throw new OtpLockedException(userId, maxAttempts);
+            }
+            log.warn("OTP code mismatch for user {} (attempt {}/{})", userId, newCount, maxAttempts);
             throw new OtpInvalidException(userId);
         }
+
         redis.delete(key);
+        redis.delete(attemptsKey);
         log.info("OTP verified and consumed for user {}", userId);
+    }
+
+    private String buildAttemptsKey(UUID userId) {
+        return OTP_KEY_PREFIX + userId + OTP_KEY_SUFFIX + OTP_ATTEMPTS_SUFFIX;
     }
 
     private String buildKey(UUID userId) {

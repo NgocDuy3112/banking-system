@@ -5,8 +5,10 @@ import com.smartbanking.backend.exception.auth.*;
 
 import com.smartbanking.backend.exception.kyc.EkycUploadException;
 import com.smartbanking.backend.exception.kyc.InvalidEkycAssetException;
+import com.smartbanking.backend.exception.kyc.EkycNotApprovedException;
 import com.smartbanking.backend.exception.otp.OtpExpiredException;
 import com.smartbanking.backend.exception.otp.OtpInvalidException;
+import com.smartbanking.backend.exception.otp.OtpLockedException;
 import com.smartbanking.backend.exception.transaction.CurrencyMismatchException;
 import com.smartbanking.backend.exception.transaction.SelfTransferException;
 import com.smartbanking.backend.exception.transaction.TransactionNotFoundException;
@@ -17,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 
@@ -61,6 +64,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ApiError.of("ACCOUNT_NOT_ACTIVE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccountAlreadyLockedException.class)
+    public ResponseEntity<ApiError> handleAccountAlreadyLocked(AccountAlreadyLockedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiError.of("ACCOUNT_ALREADY_LOCKED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccountAlreadyActiveException.class)
+    public ResponseEntity<ApiError> handleAccountAlreadyActive(AccountAlreadyActiveException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiError.of("ACCOUNT_ALREADY_ACTIVE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccountClosedException.class)
+    public ResponseEntity<ApiError> handleAccountClosed(AccountClosedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiError.of("ACCOUNT_CLOSED", ex.getMessage()));
     }
 
     @ExceptionHandler(InsufficientFundsException.class)
@@ -166,5 +190,44 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of("TRANSACTION_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String parameterName = ex.getName();
+        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+        String message = "Parameter '" + parameterName + "' has an invalid value '" + ex.getValue() + "'. Expected type '" + requiredType + "'";
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of("METHOD_ARGUMENT_TYPE_MISMATCH", message));
+    }
+
+    @ExceptionHandler(AccountNotEmptyException.class)
+    public ResponseEntity<ApiError> handleAccountNotEmpty(AccountNotEmptyException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_CONTENT)
+                .body(ApiError.of("ACCOUNT_NOT_EMPTY", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EkycNotApprovedException.class)
+    public ResponseEntity<ApiError> handleKycNotApproved(EkycNotApprovedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of("KYC_NOT_APPROVED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccountAlreadyExistsException.class)
+    public ResponseEntity<ApiError> handleAccountAlreadyExists(AccountAlreadyExistsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .header("Location", "/api/v1/accounts/" + ex.getAccountNumber())
+                .body(ApiError.of("ACCOUNT_ALREADY_EXISTS", ex.getMessage()));
+    }
+
+    @ExceptionHandler(OtpLockedException.class)
+    public ResponseEntity<ApiError> handleOtpLocked(OtpLockedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiError.of("OTP_LOCKED", ex.getMessage()));
     }
 }
